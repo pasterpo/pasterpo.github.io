@@ -107,8 +107,6 @@ button{font-family:inherit;cursor:pointer}
 #mdl input:focus{border-color:var(--green)}
 #mdl-btns{display:flex;gap:8px;justify-content:flex-end}
 
-/* HIDDEN RENDER DIV — used by html2canvas for PDF */
-#pdf-render{position:fixed;left:-99999px;top:0;background:#fff;overflow:visible;z-index:-1}
 
 @media(max-width:820px){#infosb,#pjpanel{display:none}}
 </style>
@@ -128,7 +126,6 @@ button{font-family:inherit;cursor:pointer}
 </div>
 
 <!-- HIDDEN PDF RENDER TARGET -->
-<div id="pdf-render"></div>
 
 <!-- HEADER -->
 <div id="hdr">
@@ -327,7 +324,6 @@ var cov     = document.getElementById('cov');
 var covlbl  = document.getElementById('cov-lbl');
 var wc      = document.getElementById('wc');
 var ph      = document.getElementById('ph');
-var pdfDiv  = document.getElementById('pdf-render');
 
 var curFile    = 'untitled.html';
 var compiled   = false;
@@ -511,87 +507,95 @@ function downloadHTML() {
 function downloadPDF() {
   if (!compiled) { alert('Please compile first.'); return; }
 
-  var pg=getPageMM();
-  var btn=document.getElementById('btn-dl-pdf');
-  btn.disabled=true; btn.textContent='⏳ Generating…';
-  cov.classList.add('show'); covlbl.textContent='Generating PDF…';
-  stxt.textContent='Generating PDF…';
+  var btn = document.getElementById('btn-dl-pdf');
+  btn.disabled = true; btn.textContent = '⏳ Generating…';
+  cov.classList.add('show'); covlbl.textContent = 'Generating PDF…';
+  stxt.textContent = 'Generating PDF…';
 
-  // Render into off-screen div at exact page width for accurate capture
-  pdfDiv.style.width=pg.pxW+'px';
-  pdfDiv.style.background='#fff';
+  // Create a totally invisible offscreen iframe — never touches the visible layout
+  var pdfFrame = document.createElement('iframe');
+  pdfFrame.style.cssText = 'position:fixed;left:-99999px;top:-99999px;width:1280px;height:10px;opacity:0;pointer-events:none;border:none;z-index:-999';
+  document.body.appendChild(pdfFrame);
 
-  // Copy from iframe body into the off-screen div for html2canvas
-  try {
-    var iDoc = pvdoc.contentDocument || pvdoc.contentWindow.document;
-    pdfDiv.innerHTML = iDoc.body ? iDoc.body.innerHTML : pvdoc.innerHTML;
-    // Copy styles too
-    var iStyles = iDoc.querySelectorAll('style,link');
-    var styleStr = '';
-    iStyles.forEach(function(s){ styleStr += s.outerHTML; });
-    pdfDiv.innerHTML = styleStr + pdfDiv.innerHTML;
-  } catch(e) {
-    pdfDiv.innerHTML = lastSrc;
-  }
+  pdfFrame.onload = function() {
+    // Let the iframe fully paint before measuring
+    setTimeout(function() {
+      try {
+        var iWin = pdfFrame.contentWindow;
+        var iDoc = pdfFrame.contentDocument || iWin.document;
+        var iBody = iDoc.body;
 
-  // Small delay so browser paints the off-screen div
-  setTimeout(function(){
-    html2canvas(pdfDiv,{
-      scale:2,
-      useCORS:true,
-      allowTaint:true,
-      backgroundColor:'#ffffff',
-      width:pg.pxW,
-      windowWidth:pg.pxW,
-      scrollX:0,
-      scrollY:0,
-      logging:false
-    }).then(function(canvas){
-      var jsPDF=window.jspdf.jsPDF;
-      var pdf=new jsPDF({
-        orientation:pg.ori==='landscape'?'l':'p',
-        unit:'mm',
-        format:pg.sz==='a4'?'a4':pg.sz==='a3'?'a3':'letter'
-      });
+        // Measure exact content dimensions — no guessing
+        var contentW = iBody.scrollWidth;
+        var contentH = iBody.scrollHeight;
 
-      var pdfPageW=pdf.internal.pageSize.getWidth();
-      var pdfPageH=pdf.internal.pageSize.getHeight();
-      var totalCanvasH=canvas.height;
-      var pxPerMM=pg.pxW/pg.w; // pixels per mm at scale 1
-      var pageCanvasH=Math.round(pdfPageH*pxPerMM*2); // *2 because scale:2
-      var pages=Math.ceil(totalCanvasH/pageCanvasH);
+        // Set the iframe to exact content size so html2canvas captures everything
+        pdfFrame.style.width  = contentW + 'px';
+        pdfFrame.style.height = contentH + 'px';
 
-      for(var p=0;p<pages;p++){
-        if(p>0) pdf.addPage();
-        var srcY=p*pageCanvasH;
-        var sliceH=Math.min(pageCanvasH, totalCanvasH-srcY);
+        // Another tick to let browser reflow to new size
+        setTimeout(function() {
+          html2canvas(iBody, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            width: contentW,
+            height: contentH,
+            windowWidth: contentW,
+            windowHeight: contentH,
+            scrollX: 0,
+            scrollY: 0,
+            logging: false
+          }).then(function(canvas) {
+            var jsPDF = window.jspdf.jsPDF;
 
-        var slice=document.createElement('canvas');
-        slice.width=canvas.width;
-        slice.height=sliceH;
-        slice.getContext('2d').drawImage(canvas,0,srcY,canvas.width,sliceH,0,0,canvas.width,sliceH);
+            // PDF dimensions = exact pixel content size converted to mm at 96dpi
+            var PX_TO_MM = 25.4 / 96;
+            var pdfW = contentW * PX_TO_MM;
+            var pdfH = contentH * PX_TO_MM;
 
-        var imgH=sliceH/(pxPerMM*2); // convert back to mm
-        pdf.addImage(slice.toDataURL('image/jpeg',0.95),'JPEG',0,0,pdfPageW,imgH);
+            // Single custom-sized page = exactly what you see, nothing more, nothing less
+            var pdf = new jsPDF({
+              orientation: pdfW > pdfH ? 'l' : 'p',
+              unit: 'mm',
+              format: [pdfW, pdfH]
+            });
+
+            pdf.addImage(
+              canvas.toDataURL('image/jpeg', 0.97),
+              'JPEG', 0, 0, pdfW, pdfH
+            );
+
+            var fname = (curFile.replace(/\.html?$/i, '') || 'document') + '.pdf';
+            pdf.save(fname);
+
+            // Clean up the offscreen iframe — preview is untouched
+            document.body.removeChild(pdfFrame);
+            cov.classList.remove('show');
+            btn.disabled = false; btn.textContent = '⬇ PDF';
+            stxt.textContent = 'PDF saved: ' + fname;
+            log('PDF saved: ' + fname);
+          }).catch(function(err) {
+            document.body.removeChild(pdfFrame);
+            cov.classList.remove('show');
+            btn.disabled = false; btn.textContent = '⬇ PDF';
+            stxt.textContent = 'PDF error: ' + err.message;
+            log('PDF error: ' + err.message);
+            alert('PDF error: ' + err.message);
+          });
+        }, 200);
+      } catch(e) {
+        document.body.removeChild(pdfFrame);
+        cov.classList.remove('show');
+        btn.disabled = false; btn.textContent = '⬇ PDF';
+        alert('PDF error: ' + e.message);
       }
+    }, 300);
+  };
 
-      var fname=(curFile.replace(/\.html?$/i,'')||'document')+'.pdf';
-      pdf.save(fname);
-
-      pdfDiv.innerHTML=''; // clean up
-      cov.classList.remove('show');
-      btn.disabled=false; btn.textContent='⬇ PDF';
-      stxt.textContent='PDF saved: '+fname;
-      log('PDF saved: '+fname);
-    }).catch(function(err){
-      pdfDiv.innerHTML='';
-      cov.classList.remove('show');
-      btn.disabled=false; btn.textContent='⬇ PDF';
-      stxt.textContent='PDF error: '+err.message;
-      log('PDF error: '+err.message);
-      alert('PDF generation failed: '+err.message);
-    });
-  },120);
+  // Load the exact same source into the offscreen iframe
+  pdfFrame.srcdoc = lastSrc;
 }
 
 // ── WRAP SELECTION ────────────────────────────────────────────────────────────
