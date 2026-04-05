@@ -1032,8 +1032,7 @@ function dlPDF(){
       }
     },300);
   };
-  var pdfBlob=new Blob([lastSrc],{type:'text/html'});
-  pdfFrame.src=URL.createObjectURL(pdfBlob);
+  pdfFrame.srcdoc=lastSrc;
 }
 
 // ══════════════════════════════════════════
