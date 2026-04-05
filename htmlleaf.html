@@ -928,10 +928,6 @@ function compile(){
         src = src.indexOf('</head>')>=0 ? src.replace('</head>',ki+'\n</head>') : ki+'\n'+src;
       }
 
-      // Inject theme
-      var tc=themeCSS();
-      if(src.indexOf('</head>')>=0) src=src.replace('</head>','<style>'+tc+'</style>\n</head>');
-
       lastSrc=src; compiled=true;
 
       // srcdoc works reliably in sandboxed iframes (blob URLs can be blocked)
@@ -996,14 +992,16 @@ function dlPDF(){
   btn.disabled=true; btn.textContent='⏳…';
   covEl.classList.add('show'); covlblEl.textContent='Generating PDF…';
 
+  // Use preview panel width so PDF matches what user sees
+  var pvW = pvdocEl.offsetWidth || 800;
   var pf=document.createElement('iframe');
-  pf.style.cssText='position:fixed;left:-99999px;top:-99999px;width:1280px;height:10px;opacity:0;pointer-events:none;border:none;z-index:-999';
+  pf.style.cssText='position:fixed;left:-99999px;top:-99999px;width:'+pvW+'px;height:10px;opacity:0;pointer-events:none;border:none;z-index:-999';
   document.body.appendChild(pf);
   pf.onload=function(){
     setTimeout(function(){
       try{
         var ib=pf.contentDocument.body;
-        var cW=ib.scrollWidth, cH=ib.scrollHeight;
+        var cW=pvW, cH=ib.scrollHeight;
         pf.style.width=cW+'px'; pf.style.height=cH+'px';
         setTimeout(function(){
           html2canvas(ib,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#fff',width:cW,height:cH,windowWidth:cW,windowHeight:cH,scrollX:0,scrollY:0,logging:false})
@@ -1031,8 +1029,7 @@ function dlPDF(){
       }
     },300);
   };
-  var b=new Blob([lastSrc],{type:'text/html'});
-  pf.src=URL.createObjectURL(b);
+  pf.srcdoc=lastSrc;
 }
 
 // ══════════════════════════════════════════
