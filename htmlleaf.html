@@ -699,100 +699,89 @@ function downloadPDF(){
   cov.classList.add('show'); covlbl.textContent='Generating PDF…';
   stxt.textContent='Generating PDF…';
 
-  var pdfFrame=document.createElement('iframe');
-  pdfFrame.style.cssText='position:fixed;left:-99999px;top:-99999px;width:1280px;height:10px;opacity:0;pointer-events:none;border:none;z-index:-999';
-  document.body.appendChild(pdfFrame);
+  // Capture directly from the VISIBLE preview iframe — fonts already loaded and rendered
+  var iWin = pvdoc.contentWindow;
+  var iDoc = pvdoc.contentDocument || iWin.document;
+  var iBody = iDoc.body;
 
-  pdfFrame.onload=function(){
-    // Wait for Google Fonts to fully load inside the offscreen frame
-    var iWin=pdfFrame.contentWindow;
-    var fontReady = (iWin.document.fonts && iWin.document.fonts.ready) ? iWin.document.fonts.ready : Promise.resolve();
-    fontReady.then(function(){
-      // Extra delay to ensure all web fonts are painted
-      setTimeout(function(){
-      try{
-        var iDoc=pdfFrame.contentDocument||iWin.document;
-        var iBody=iDoc.body;
-        var contentW=iBody.scrollWidth;
-        var contentH=iBody.scrollHeight;
-        pdfFrame.style.width=contentW+'px';
-        pdfFrame.style.height=contentH+'px';
+  // Wait for fonts to be ready (they already are since user can see the preview)
+  var fontReady = (iDoc.fonts && iDoc.fonts.ready) ? iDoc.fonts.ready : Promise.resolve();
+  fontReady.then(function(){
+    // Measure the actual rendered content size
+    var contentW = iBody.scrollWidth;
+    var contentH = iBody.scrollHeight;
 
-        setTimeout(function(){
-          html2canvas(iBody,{
-            scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',
-            width:contentW,height:contentH,
-            windowWidth:contentW,windowHeight:contentH,
-            scrollX:0,scrollY:0,logging:false
-          }).then(function(canvas){
-            var jsPDF=window.jspdf.jsPDF;
-            var PX_TO_MM=25.4/96;
-            var fname=(curFile.replace(/\.html?$/i,'')||'document')+'.pdf';
-
-            if(pdfMode==='free'){
-              // ── FREE MODE: entire content = one page, no splits ──
-              var pdfW=contentW*PX_TO_MM;
-              var pdfH=contentH*PX_TO_MM;
-              var pdf=new jsPDF({
-                orientation:pdfW>pdfH?'l':'p',
-                unit:'mm',
-                format:[pdfW,pdfH]
-              });
-              pdf.addImage(canvas.toDataURL('image/jpeg',0.97),'JPEG',0,0,pdfW,pdfH);
-              pdf.save(fname);
-
-            } else {
-              // ── A4 MODE: standard page breaks ──
-              var pg=getPageMM();
-              var pdf=new jsPDF({
-                orientation:pg.ori==='landscape'?'l':'p',
-                unit:'mm',
-                format:pg.sz==='a4'?'a4':pg.sz==='a3'?'a3':'letter'
-              });
-              var pageW=pdf.internal.pageSize.getWidth();
-              var pageH=pdf.internal.pageSize.getHeight();
-              // scale canvas width to fit page width
-              var scale=pageW/(contentW*PX_TO_MM);
-              var scaledPageHpx=(pageH/PX_TO_MM)*(canvas.width/(contentW*2)); // canvas px per page
-              var totalPages=Math.ceil(canvas.height/scaledPageHpx);
-              for(var p=0;p<totalPages;p++){
-                if(p>0) pdf.addPage();
-                var srcY=Math.round(p*scaledPageHpx);
-                var sliceH=Math.min(Math.round(scaledPageHpx),canvas.height-srcY);
-                var slice=document.createElement('canvas');
-                slice.width=canvas.width; slice.height=sliceH;
-                slice.getContext('2d').drawImage(canvas,0,srcY,canvas.width,sliceH,0,0,canvas.width,sliceH);
-                var sliceHmm=sliceH*PX_TO_MM*(contentW/canvas.width)*2;
-                pdf.addImage(slice.toDataURL('image/jpeg',0.97),'JPEG',0,0,pageW,sliceHmm);
-              }
-              pdf.save(fname);
-            }
-
-            document.body.removeChild(pdfFrame);
-            cov.classList.remove('show');
-            btn.disabled=false; btn.textContent='⬇ PDF';
-            stxt.textContent='PDF saved: '+fname;
-            log('PDF saved ('+pdfMode+' mode): '+fname);
-
-          }).catch(function(err){
-            document.body.removeChild(pdfFrame);
-            cov.classList.remove('show');
-            btn.disabled=false; btn.textContent='⬇ PDF';
-            stxt.textContent='PDF error';
-            log('PDF error: '+err.message);
-            alert('PDF error: '+err.message);
-          });
-        },200);
-      }catch(e){
-        document.body.removeChild(pdfFrame);
-        cov.classList.remove('show');
-        btn.disabled=false; btn.textContent='⬇ PDF';
-        alert('PDF error: '+e.message);
+    html2canvas(iBody, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      width: contentW,
+      height: contentH,
+      windowWidth: contentW,
+      windowHeight: contentH,
+      scrollX: 0,
+      scrollY: 0,
+      logging: false,
+      onclone: function(clonedDoc) {
+        // Copy all computed styles from original to clone to preserve fonts
+        clonedDoc.body.style.fontFamily = iBody.style.fontFamily;
       }
-    },500);
+    }).then(function(canvas){
+      var jsPDF = window.jspdf.jsPDF;
+      var PX_TO_MM = 25.4 / 96;
+      var fname = (curFile.replace(/\.html?$/i,'') || 'document') + '.pdf';
+
+      if(pdfMode === 'free'){
+        // FREE MODE: one single continuous page
+        var pdfW = contentW * PX_TO_MM;
+        var pdfH = contentH * PX_TO_MM;
+        var pdf = new jsPDF({
+          orientation: pdfW > pdfH ? 'l' : 'p',
+          unit: 'mm',
+          format: [pdfW, pdfH]
+        });
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.97), 'JPEG', 0, 0, pdfW, pdfH);
+        pdf.save(fname);
+
+      } else {
+        // A4 MODE: standard page breaks
+        var pg = getPageMM();
+        var pdf = new jsPDF({
+          orientation: pg.ori === 'landscape' ? 'l' : 'p',
+          unit: 'mm',
+          format: pg.sz === 'a4' ? 'a4' : pg.sz === 'a3' ? 'a3' : 'letter'
+        });
+        var pageW = pdf.internal.pageSize.getWidth();
+        var pageH = pdf.internal.pageSize.getHeight();
+        var scaledPageHpx = (pageH / PX_TO_MM) * (canvas.width / (contentW * 2));
+        var totalPages = Math.ceil(canvas.height / scaledPageHpx);
+        for(var p = 0; p < totalPages; p++){
+          if(p > 0) pdf.addPage();
+          var srcY = Math.round(p * scaledPageHpx);
+          var sliceH = Math.min(Math.round(scaledPageHpx), canvas.height - srcY);
+          var slice = document.createElement('canvas');
+          slice.width = canvas.width; slice.height = sliceH;
+          slice.getContext('2d').drawImage(canvas, 0, srcY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+          var sliceHmm = sliceH * PX_TO_MM * (contentW / canvas.width) * 2;
+          pdf.addImage(slice.toDataURL('image/jpeg', 0.97), 'JPEG', 0, 0, pageW, sliceHmm);
+        }
+        pdf.save(fname);
+      }
+
+      cov.classList.remove('show');
+      btn.disabled = false; btn.textContent = '⬇ PDF';
+      stxt.textContent = 'PDF saved: ' + fname;
+      log('PDF saved (' + pdfMode + ' mode): ' + fname);
+
+    }).catch(function(err){
+      cov.classList.remove('show');
+      btn.disabled = false; btn.textContent = '⬇ PDF';
+      stxt.textContent = 'PDF error: ' + err.message;
+      log('PDF error: ' + err.message);
+      alert('PDF error: ' + err.message);
     });
-  };
-  pdfFrame.srcdoc=lastSrc;
+  });
 }
 
 // ── WRAP SELECTION ────────────────────────────────────────
