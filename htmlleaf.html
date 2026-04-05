@@ -987,49 +987,49 @@ function dlPDF(){
     return;
   }
 
-  // Free mode
+  // Free mode — blob URL so fonts/images load correctly
   var btn=$('btndlpdf');
   btn.disabled=true; btn.textContent='⏳…';
   covEl.classList.add('show'); covlblEl.textContent='Generating PDF…';
 
-  // Use preview panel width so PDF matches what user sees
-  var pvW = pvdocEl.offsetWidth || 800;
-  var pf=document.createElement('iframe');
-  pf.style.cssText='position:fixed;left:-99999px;top:-99999px;width:'+pvW+'px;height:10px;opacity:0;pointer-events:none;border:none;z-index:-999';
-  document.body.appendChild(pf);
-  pf.onload=function(){
+  var pdfFrame=document.createElement('iframe');
+  pdfFrame.style.cssText='position:fixed;left:-99999px;top:-99999px;width:1280px;height:10px;opacity:0;pointer-events:none;border:none;z-index:-999';
+  document.body.appendChild(pdfFrame);
+  pdfFrame.onload=function(){
     setTimeout(function(){
       try{
-        var ib=pf.contentDocument.body;
-        var cW=pvW, cH=ib.scrollHeight;
-        pf.style.width=cW+'px'; pf.style.height=cH+'px';
+        var iDoc=pdfFrame.contentDocument||pdfFrame.contentWindow.document;
+        var iBody=iDoc.body;
+        var cW=iBody.scrollWidth, cH=iBody.scrollHeight;
+        pdfFrame.style.width=cW+'px'; pdfFrame.style.height=cH+'px';
         setTimeout(function(){
-          html2canvas(ib,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#fff',width:cW,height:cH,windowWidth:cW,windowHeight:cH,scrollX:0,scrollY:0,logging:false})
+          html2canvas(iBody,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',width:cW,height:cH,windowWidth:cW,windowHeight:cH,scrollX:0,scrollY:0,logging:false})
           .then(function(canvas){
-            var P=window.jspdf.jsPDF;
-            var mm=25.4/96;
-            var pW=cW*mm, pH=cH*mm;
-            var pdf=new P({orientation:pW>pH?'l':'p',unit:'mm',format:[pW,pH]});
+            var jsPDF=window.jspdf.jsPDF;
+            var PX_TO_MM=25.4/96;
+            var pW=cW*PX_TO_MM, pH=cH*PX_TO_MM;
+            var pdf=new jsPDF({orientation:pW>pH?'l':'p',unit:'mm',format:[pW,pH]});
             pdf.addImage(canvas.toDataURL('image/jpeg',0.97),'JPEG',0,0,pW,pH);
             pdf.save(fname);
-            document.body.removeChild(pf);
+            document.body.removeChild(pdfFrame);
             covEl.classList.remove('show');
             btn.disabled=false; btn.textContent='⬇ PDF';
             toast('PDF saved: '+fname,'ok'); log('PDF: '+fname);
-          }).catch(function(e){
-            document.body.removeChild(pf); covEl.classList.remove('show');
+          }).catch(function(err){
+            document.body.removeChild(pdfFrame); covEl.classList.remove('show');
             btn.disabled=false; btn.textContent='⬇ PDF';
-            toast('PDF error: '+e.message,'err');
+            toast('PDF error: '+err.message,'err');
           });
         },200);
       }catch(e){
-        document.body.removeChild(pf); covEl.classList.remove('show');
+        document.body.removeChild(pdfFrame); covEl.classList.remove('show');
         btn.disabled=false; btn.textContent='⬇ PDF';
         toast('PDF error: '+e.message,'err');
       }
     },300);
   };
-  pf.srcdoc=lastSrc;
+  var blob=new Blob([lastSrc],{type:'text/html'});
+  pdfFrame.src=URL.createObjectURL(blob);
 }
 
 // ══════════════════════════════════════════
