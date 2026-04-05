@@ -72,7 +72,7 @@ button{font-family:inherit;cursor:pointer}
 .tab svg{width:11px;height:11px}
 .ew{flex:1;position:relative;overflow:hidden}
 #editor{position:absolute;inset:0;width:100%;height:100%;background:var(--eb);color:#d4d4d4;border:none;outline:none;resize:none;font-family:'Courier New',Consolas,monospace;font-size:13px;line-height:1.65;padding:10px 10px 10px 48px;tab-size:2;caret-color:#fff}
-#lnums{position:absolute;left:0;top:0;width:40px;padding:10px 5px 10px 0;text-align:right;font-family:'Courier New',monospace;font-size:13px;line-height:1.65;color:#333;pointer-events:none;overflow:hidden;user-select:none;background:var(--eb);border-right:1px solid #252525}
+#lnums{position:absolute;left:0;top:0;width:40px;padding:10px 5px 10px 0;text-align:right;font-family:'Courier New',monospace;font-size:13px;line-height:1.65;color:#555;pointer-events:none;overflow:hidden;user-select:none;background:#1a1a1a;border-right:1px solid #2e2e2e}
 #pvpanel{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
 .ptop{background:#1e1e1e;border-bottom:1px solid var(--bdr);padding:4px 10px;display:flex;align-items:center;gap:6px;flex-shrink:0}
 .ptop span{font-size:11px;color:var(--mut)}
@@ -396,39 +396,53 @@ function downloadPDF(){
   cov.classList.add('show');covlbl.textContent='Generating PDF…';
   stxt.textContent='Generating PDF…';
 
-  // Screenshot the entire pvpanel — this is the rendered preview visible on screen
-  var target=document.getElementById('pvpanel');
+  // Get the iframe's rendered HTML, put it in an off-page div, screenshot that
+  // This is guaranteed to match exactly — same browser engine, same fonts
+  var iDoc = pvdoc.contentDocument || pvdoc.contentWindow.document;
+  var iHtml = iDoc.documentElement.outerHTML;
 
-  html2canvas(target,{
-    scale:2,
-    useCORS:true,
-    allowTaint:true,
-    backgroundColor:'#ffffff',
-    logging:false,
-    ignoreElements:function(el){
-      // ignore the overlay and tabbar, only capture the actual content
-      return el.id==='cov'||el.classList.contains('tabbar')||el.classList.contains('ptop');
-    }
-  }).then(function(canvas){
-    var jsPDF=window.jspdf.jsPDF;
-    var PX_TO_MM=25.4/96;
-    var fname=(curFile.replace(/\.html?$/i,'')||'document')+'.pdf';
-    var canvasW=canvas.width/2; // divide by scale
-    var canvasH=canvas.height/2;
-    var pdfW=canvasW*PX_TO_MM;
-    var pdfH=canvasH*PX_TO_MM;
+  // Create a full-page hidden div, copy the iframe content into it
+  var wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:fixed;left:0;top:0;width:'+pvdoc.offsetWidth+'px;background:#fff;z-index:-9999;opacity:0.01;pointer-events:none;overflow:visible';
+  wrapper.innerHTML = iHtml;
+  document.body.appendChild(wrapper);
 
-    // Always one page — exact screenshot of what you see
-    var pdf=new jsPDF({orientation:pdfW>pdfH?'l':'p',unit:'mm',format:[pdfW,pdfH]});
-    pdf.addImage(canvas.toDataURL('image/jpeg',0.97),'JPEG',0,0,pdfW,pdfH);
-    pdf.save(fname);
+  // Small delay so browser paints it
+  setTimeout(function(){
+    var W = wrapper.scrollWidth;
+    var H = wrapper.scrollHeight;
+    wrapper.style.width = W + 'px';
 
-    cov.classList.remove('show');btn.disabled=false;btn.textContent='⬇ PDF';
-    stxt.textContent='PDF saved!';log('PDF saved: '+fname);
-  }).catch(function(err){
-    cov.classList.remove('show');btn.disabled=false;btn.textContent='⬇ PDF';
-    log('PDF error: '+err.message);alert('PDF error: '+err.message);
-  });
+    html2canvas(wrapper, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      width: W,
+      height: H,
+      windowWidth: W,
+      windowHeight: H,
+      scrollX: 0,
+      scrollY: 0,
+      logging: false
+    }).then(function(canvas){
+      document.body.removeChild(wrapper);
+      var jsPDF = window.jspdf.jsPDF;
+      var PX_TO_MM = 25.4/96;
+      var fname = (curFile.replace(/\.html?$/i,'')||'document')+'.pdf';
+      var pdfW = (canvas.width/2)*PX_TO_MM;
+      var pdfH = (canvas.height/2)*PX_TO_MM;
+      var pdf = new jsPDF({orientation:pdfW>pdfH?'l':'p',unit:'mm',format:[pdfW,pdfH]});
+      pdf.addImage(canvas.toDataURL('image/jpeg',0.97),'JPEG',0,0,pdfW,pdfH);
+      pdf.save(fname);
+      cov.classList.remove('show');btn.disabled=false;btn.textContent='⬇ PDF';
+      stxt.textContent='PDF saved!';log('PDF saved: '+fname);
+    }).catch(function(err){
+      document.body.removeChild(wrapper);
+      cov.classList.remove('show');btn.disabled=false;btn.textContent='⬇ PDF';
+      log('PDF error: '+err.message);alert('PDF error: '+err.message);
+    });
+  }, 300);
 }
 
 function wrapSel(o,c){var s=ed.selectionStart,e=ed.selectionEnd,sel=ed.value.slice(s,e)||'text',ins=o+sel+c;ed.value=ed.value.slice(0,s)+ins+ed.value.slice(e);ed.selectionStart=s;ed.selectionEnd=s+ins.length;ed.focus();syncLN();}
