@@ -552,6 +552,18 @@ function syncPagedControls() {
   elements.pageSizeWrap.classList.toggle("hidden", !isPaged);
   elements.pageOrientationWrap.classList.toggle("hidden", !isPaged);
   elements.downloadOutputButton.disabled = elements.compileMode.value === "app";
+  const title = qs("h3", elements.previewEmptyState);
+  const copy = qs("p", elements.previewEmptyState);
+  if (elements.compileMode.value === "app") {
+    title.textContent = "Compile to open the app preview";
+    copy.textContent = "App mode runs the project inside a sandboxed iframe so you can click, scroll, and interact.";
+  } else if (elements.compileMode.value === "paged") {
+    title.textContent = "Compile to render paged PDF output";
+    copy.textContent = "Paged mode captures the document into page-sized PDF boundaries using the selected format and orientation.";
+  } else {
+    title.textContent = "Compile to render output";
+    copy.textContent = "Freestyle creates a direct PDF render, while App opens a sandboxed interactive site preview.";
+  }
 }
 
 function renderProjectGrid() {
