@@ -876,6 +876,12 @@ function updateHeaderAuth() {
   } else {
     elements.headerAuthButton.textContent = "Sign In";
   }
+
+  if (state.backendReachable && !state.currentUser) {
+    elements.compileButton.textContent = "Sign In to Compile";
+  } else {
+    elements.compileButton.textContent = "Compile";
+  }
 }
 
 function updateProjectSource() {
