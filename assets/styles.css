@@ -13,7 +13,7 @@
   --accent-soft: #e7f3f0;
   --danger: #b24242;
   --danger-soft: #fbe9e9;
-  --shadow: 0 16px 40px rgba(20, 31, 41, 0.08);
+  --shadow: 0 10px 24px rgba(20, 31, 41, 0.05);
   --radius-lg: 18px;
   --radius-md: 12px;
   --radius-sm: 9px;
@@ -231,7 +231,7 @@ button {
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafb 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
   border: 1px solid var(--border);
   border-radius: 28px;
   padding: 30px;
@@ -561,8 +561,8 @@ button {
   min-height: 0;
   position: relative;
   background:
-    linear-gradient(180deg, rgba(240, 243, 246, 0.88), rgba(240, 243, 246, 0.88)),
-    radial-gradient(circle at top left, rgba(15, 108, 91, 0.08), transparent 34%);
+    linear-gradient(180deg, rgba(243, 245, 247, 0.92), rgba(243, 245, 247, 0.92)),
+    radial-gradient(circle at top left, rgba(15, 108, 91, 0.05), transparent 34%);
 }
 
 .preview-frame-wrap iframe {
