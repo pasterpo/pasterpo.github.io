@@ -15,10 +15,15 @@ const PAGE_SIZES = {
 const LANGUAGE_BY_EXTENSION = {
   html: { label: "HTML", mode: "htmlmixed", mime: "text/html" },
   htm: { label: "HTML", mode: "htmlmixed", mime: "text/html" },
+  xml: { label: "XML", mode: "xml", mime: "application/xml" },
+  svg: { label: "SVG", mode: "xml", mime: "image/svg+xml" },
   css: { label: "CSS", mode: "css", mime: "text/css" },
   js: { label: "JavaScript", mode: "javascript", mime: "text/javascript" },
   mjs: { label: "JavaScript", mode: "javascript", mime: "text/javascript" },
   cjs: { label: "JavaScript", mode: "javascript", mime: "text/javascript" },
+  ts: { label: "TypeScript", mode: "javascript", mime: "text/typescript" },
+  jsx: { label: "JSX", mode: { name: "javascript", jsx: true }, mime: "text/jsx" },
+  tsx: { label: "TSX", mode: { name: "javascript", jsx: true }, mime: "text/tsx" },
   json: { label: "JSON", mode: { name: "javascript", json: true }, mime: "application/json" },
   py: { label: "Python", mode: "python", mime: "text/x-python" },
   md: { label: "Markdown", mode: "markdown", mime: "text/markdown" },
@@ -29,7 +34,9 @@ const LANGUAGE_BY_EXTENSION = {
   sql: { label: "SQL", mode: "sql", mime: "text/x-sql" },
   java: { label: "Java", mode: "clike", mime: "text/x-java" },
   c: { label: "C", mode: "clike", mime: "text/x-csrc" },
-  cpp: { label: "C++", mode: "clike", mime: "text/x-c++src" }
+  cpp: { label: "C++", mode: "clike", mime: "text/x-c++src" },
+  php: { label: "PHP", mode: "clike", mime: "application/x-httpd-php" },
+  rb: { label: "Ruby", mode: null, mime: "text/x-ruby" }
 };
 
 const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp", "ico"]);
