@@ -1071,6 +1071,10 @@ async function submitAuth() {
       setFormMessage(elements.authMessage, "Account created. Check your email to confirm sign-in.", true);
       return;
     }
+    const authedUser = result.data?.user || result.data?.session?.user;
+    if (authedUser) {
+      await supabaseClient.from("profiles").upsert({ id: authedUser.id });
+    }
     closeModal(elements.authModal);
     elements.authPassword.value = "";
     await loadProjects();
