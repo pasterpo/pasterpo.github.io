@@ -1511,7 +1511,8 @@ function downloadOutput() {
 }
 
 function parseGitHubUrl(url) {
-  const match = url.trim().match(/^https?:\/\/github\.com\/([^/]+)\/([^/#?]+)(?:\/tree\/([^/]+)\/?(.*))?/i);
+  const cleanUrl = url.trim().replace(/\/+$/, "");
+  const match = cleanUrl.match(/^https?:\/\/github\.com\/([^/]+)\/([^/#?]+)(?:\/tree\/([^/]+)\/?(.*))?/i);
   if (!match) return null;
   return {
     owner: match[1],
@@ -1617,7 +1618,7 @@ async function importRepository(url) {
     }
   }
 
-  project.name = repoMeta.name || project.name;
+  project.name = parsed.basePath ? `${repoMeta.name} / ${parsed.basePath.split("/").pop()}` : (repoMeta.name || project.name);
   project.openFileIds = project.selectedFileId ? [project.selectedFileId] : [];
   await saveProjectRecord(project);
   await loadProjects();
