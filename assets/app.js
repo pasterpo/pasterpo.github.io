@@ -1312,6 +1312,8 @@ async function buildVirtualWorkspace(project) {
 }
 
 async function generateFreestylePdf(project, frame, htmlSource) {
+  // Keep Freestyle isolated inside an offscreen iframe so the PDF render uses the
+  // document's own defaults instead of inheriting the app shell's font styling.
   frame.style.cssText = "position: fixed; left: -99999px; top: -99999px; width: 1280px; height: 10px; border: 0; opacity: 0; pointer-events: none;";
   document.body.appendChild(frame);
   frame.srcdoc = htmlSource;
@@ -1454,10 +1456,14 @@ async function compileProject() {
       setCompileStatus("Compiled", "App preview is live inside a sandboxed iframe.", "ok");
     } else {
       const frame = document.createElement("iframe");
-      const pdfBlob = mode === "freestyle"
-        ? await generateFreestylePdf(state.activeProject, frame, htmlSource)
-        : await generatePagedPdf(state.activeProject, frame, htmlSource);
-      frame.remove();
+      let pdfBlob;
+      try {
+        pdfBlob = mode === "freestyle"
+          ? await generateFreestylePdf(state.activeProject, frame, htmlSource)
+          : await generatePagedPdf(state.activeProject, frame, htmlSource);
+      } finally {
+        frame.remove();
+      }
 
       const previewUrl = rememberUrl(URL.createObjectURL(pdfBlob));
       const previewFrame = elements.previewFrame;
