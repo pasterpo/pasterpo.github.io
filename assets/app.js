@@ -60,12 +60,14 @@ const elements = {
   pageSizeWrap: document.getElementById("page-size-wrap"),
   pageOrientationWrap: document.getElementById("page-orientation-wrap"),
   compileButton: document.getElementById("compile-button"),
-  downloadOutputButton: document.getElementById("download-output-button"),
+  downloadHtmlButton: document.getElementById("download-html-button"),
+  downloadPdfButton: document.getElementById("download-pdf-button"),
   saveProjectButton: document.getElementById("save-project-button"),
   compileStatus: document.getElementById("compile-status"),
   compileDetail: document.getElementById("compile-detail"),
   previewFrame: document.getElementById("preview-frame"),
   previewEmptyState: document.getElementById("preview-empty-state"),
+  pdfRender: document.getElementById("pdf-render"),
   projectName: document.getElementById("project-name"),
   tabStrip: document.getElementById("tab-strip"),
   activeFilePath: document.getElementById("active-file-path"),
@@ -107,7 +109,10 @@ const state = {
   openFileIds: [],
   activeFileId: null,
   selectedTreeNodeId: null,
-  currentOutput: null,
+  compiled: false,
+  lastCompiledHtml: "",
+  lastCompiledFileName: "document.html",
+  lastCompiledMode: "freestyle",
   objectUrls: new Set(),
   saveTimer: null,
   promptHandler: null,
@@ -516,10 +521,14 @@ function openWorkspace(projectId) {
   state.activeFileId = state.activeProject.selectedFileId;
   state.selectedTreeNodeId = state.activeFileId;
   state.openFileIds = [...new Set(state.activeProject.openFileIds || [state.activeFileId])].filter(Boolean);
-  state.currentOutput = null;
+  state.compiled = false;
+  state.lastCompiledHtml = "";
+  state.lastCompiledMode = state.activeProject.compileMode || "freestyle";
+  state.lastCompiledFileName = "document.html";
   elements.previewFrame.src = "about:blank";
+  elements.previewFrame.removeAttribute("srcdoc");
   elements.previewEmptyState.classList.remove("hidden");
-  elements.downloadOutputButton.disabled = elements.compileMode.value === "app";
+  elements.downloadPdfButton.disabled = elements.compileMode.value === "app";
   saveLastProjectId(projectId);
   elements.projectName.textContent = state.activeProject.name;
   elements.workspaceStorageLabel.textContent = state.backendReachable && state.currentUser
@@ -551,7 +560,7 @@ function syncPagedControls() {
   const isPaged = elements.compileMode.value === "paged";
   elements.pageSizeWrap.classList.toggle("hidden", !isPaged);
   elements.pageOrientationWrap.classList.toggle("hidden", !isPaged);
-  elements.downloadOutputButton.disabled = elements.compileMode.value === "app";
+  elements.downloadPdfButton.disabled = elements.compileMode.value === "app";
   const title = qs("h3", elements.previewEmptyState);
   const copy = qs("p", elements.previewEmptyState);
   if (elements.compileMode.value === "app") {
@@ -1321,109 +1330,30 @@ async function buildVirtualWorkspace(project) {
   return { materialize, sourceFor, fileMap };
 }
 
-async function generateFreestylePdf(project, frame, htmlSource) {
-  // Keep Freestyle isolated inside an offscreen iframe so the PDF render uses the
-  // document's own defaults instead of inheriting the app shell's font styling.
-  frame.style.cssText = "position: fixed; left: -99999px; top: -99999px; width: 1280px; height: 10px; border: 0; opacity: 0; pointer-events: none;";
-  document.body.appendChild(frame);
-  frame.srcdoc = htmlSource;
-  await new Promise((resolve, reject) => {
-    frame.onload = resolve;
-    frame.onerror = reject;
-  });
-  await waitForFrameAssets(frame);
-  const doc = frame.contentDocument;
-  const body = doc.body;
-  const width = Math.max(body.scrollWidth, doc.documentElement.scrollWidth);
-  const height = Math.max(body.scrollHeight, doc.documentElement.scrollHeight);
-  frame.style.width = `${Math.max(width, 960)}px`;
-  frame.style.height = `${Math.max(height, 720)}px`;
-  await new Promise((resolve) => setTimeout(resolve, 120));
-
-  const canvas = await window.html2canvas(body, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: "#ffffff",
-    width,
-    height,
-    windowWidth: width,
-    windowHeight: height,
-    scrollX: 0,
-    scrollY: 0,
-    logging: false
-  });
-
-  const { jsPDF } = window.jspdf;
-  const pxToMm = 25.4 / 96;
-  const pdfWidth = width * pxToMm;
-  const pdfHeight = height * pxToMm;
-  const pdf = new jsPDF({
-    orientation: pdfWidth > pdfHeight ? "landscape" : "portrait",
-    unit: "mm",
-    format: [pdfWidth, pdfHeight]
-  });
-  pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pdfWidth, pdfHeight);
-  return pdf.output("blob");
-}
-
-async function generatePagedPdf(project, frame, htmlSource) {
+function injectPagedMode(htmlSource) {
   const page = PAGE_SIZES[elements.pageSize.value] || PAGE_SIZES.A4;
   const orientation = elements.pageOrientation.value;
   const widthMm = orientation === "portrait" ? page.widthMm : page.heightMm;
   const heightMm = orientation === "portrait" ? page.heightMm : page.widthMm;
-  const widthPx = Math.round((widthMm / 25.4) * 96);
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(htmlSource, "text/html");
+  const style = doc.createElement("style");
+  style.textContent = [
+    `@page { size: ${elements.pageSize.value} ${orientation}; margin: 0; }`,
+    "html { background: #e8ebef; }",
+    `body { max-width: ${widthMm}mm; min-height: ${heightMm}mm; margin: 18px auto !important; background: #ffffff; box-shadow: 0 0 0 1px rgba(23,33,43,0.08); }`
+  ].join("\n");
+  doc.head.appendChild(style);
+  return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
+}
 
-  frame.style.cssText = `position: fixed; left: -99999px; top: -99999px; width: ${widthPx}px; height: 10px; border: 0; opacity: 0; pointer-events: none;`;
-  document.body.appendChild(frame);
-  frame.srcdoc = htmlSource;
-  await new Promise((resolve, reject) => {
-    frame.onload = resolve;
-    frame.onerror = reject;
-  });
-  await waitForFrameAssets(frame);
-  const doc = frame.contentDocument;
-  doc.documentElement.style.width = `${widthPx}px`;
-  doc.body.style.width = `${widthPx}px`;
-  doc.body.style.margin = doc.body.style.margin || "0";
-  doc.body.style.background = doc.body.style.background || "#ffffff";
-  await new Promise((resolve) => setTimeout(resolve, 120));
-
-  const body = doc.body;
-  const width = widthPx;
-  const height = Math.max(body.scrollHeight, doc.documentElement.scrollHeight);
-  frame.style.height = `${Math.max(height, 720)}px`;
-
-  const canvas = await window.html2canvas(body, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: "#ffffff",
-    width,
-    height,
-    windowWidth: width,
-    windowHeight: height,
-    scrollX: 0,
-    scrollY: 0,
-    logging: false
-  });
-
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ orientation, unit: "mm", format: [widthMm, heightMm] });
-  const pageHeightPx = Math.floor((heightMm / widthMm) * canvas.width);
-  let pageIndex = 0;
-
-  for (let offset = 0; offset < canvas.height; offset += pageHeightPx) {
-    if (pageIndex > 0) pdf.addPage([widthMm, heightMm], orientation);
-    const slice = document.createElement("canvas");
-    slice.width = canvas.width;
-    slice.height = Math.min(pageHeightPx, canvas.height - offset);
-    const context = slice.getContext("2d");
-    context.drawImage(canvas, 0, offset, canvas.width, slice.height, 0, 0, canvas.width, slice.height);
-    const renderedHeightMm = (slice.height / canvas.width) * widthMm;
-    pdf.addImage(slice.toDataURL("image/png"), "PNG", 0, 0, widthMm, renderedHeightMm);
-    pageIndex += 1;
-  }
-
-  return pdf.output("blob");
+async function buildCompiledSource(project, entryFile, mode) {
+  cleanupObjectUrls();
+  const workspace = await buildVirtualWorkspace(project);
+  const entryPath = getNodePath(project, entryFile.id);
+  const htmlSource = await workspace.sourceFor(entryPath);
+  if (!htmlSource) return null;
+  return mode === "paged" ? injectPagedMode(htmlSource) : htmlSource;
 }
 
 async function compileProject() {
@@ -1436,78 +1366,149 @@ async function compileProject() {
     return;
   }
 
-  cleanupObjectUrls();
-  const workspace = await buildVirtualWorkspace(state.activeProject);
-  const entryPath = getNodePath(state.activeProject, entryFile.id);
-  const entryUrl = await workspace.materialize(entryPath);
-  const htmlSource = await workspace.sourceFor(entryPath);
-
-  if (!entryUrl || !htmlSource) {
-    setCompileStatus("Compile error", "The entry file could not be resolved.", "error");
-    return;
-  }
-
   const mode = elements.compileMode.value;
   state.activeProject.compileMode = mode;
   state.activeProject.pageSize = elements.pageSize.value;
   state.activeProject.pageOrientation = elements.pageOrientation.value;
   elements.entryFileLabel.textContent = entryFile.name;
 
-  try {
-    setCompileStatus("Compiling", mode === "app" ? "Opening sandboxed app preview." : "Rendering PDF preview.", "working");
-    createFrame();
+  setCompileStatus("Compiling", mode === "app" ? "Opening sandboxed preview." : "Rendering preview from the compiled document.", "working");
+  elements.previewEmptyState.classList.add("hidden");
 
-    if (mode === "app") {
+  setTimeout(async () => {
+    try {
+      const compiledHtml = await buildCompiledSource(state.activeProject, entryFile, mode);
+      if (!compiledHtml) throw new Error("The entry file could not be resolved.");
+
       const frame = elements.previewFrame;
-      frame.sandbox = "allow-scripts allow-forms allow-modals allow-popups allow-downloads";
-      frame.src = entryUrl;
-      state.currentOutput = { mode, url: entryUrl, blob: null };
-      elements.downloadOutputButton.disabled = true;
-      setCompileStatus("Compiled", "App preview is live inside a sandboxed iframe.", "ok");
-    } else {
-      const frame = document.createElement("iframe");
-      let pdfBlob;
-      try {
-        pdfBlob = mode === "freestyle"
-          ? await generateFreestylePdf(state.activeProject, frame, htmlSource)
-          : await generatePagedPdf(state.activeProject, frame, htmlSource);
-      } finally {
-        frame.remove();
-      }
-
-      const previewUrl = rememberUrl(URL.createObjectURL(pdfBlob));
-      const previewFrame = elements.previewFrame;
-      previewFrame.removeAttribute("sandbox");
-      previewFrame.src = previewUrl;
-      state.currentOutput = {
-        mode,
-        url: previewUrl,
-        blob: pdfBlob,
-        filename: `${state.activeProject.name.replace(/[^\w.-]+/g, "-").toLowerCase() || "htmlleaf"}.pdf`
+      frame.onload = async () => {
+        state.compiled = true;
+        state.lastCompiledHtml = compiledHtml;
+        state.lastCompiledMode = mode;
+        state.lastCompiledFileName = entryFile.name;
+        elements.downloadPdfButton.disabled = mode === "app";
+        const detail = mode === "app"
+          ? "App preview is interactive inside a sandboxed iframe."
+          : mode === "paged"
+            ? `Preview compiled with ${elements.pageSize.value} ${elements.pageOrientation.value} framing.`
+            : "Preview compiled from the document as-is.";
+        setCompileStatus("Compiled", detail, "ok");
       };
-      elements.downloadOutputButton.disabled = false;
-      const detail = mode === "freestyle"
-        ? "Freestyle PDF uses the document as-is with isolated rendering."
-        : `Paged PDF respects ${elements.pageSize.value} ${elements.pageOrientation.value} boundaries.`;
-      setCompileStatus("Compiled", detail, "ok");
+
+      frame.removeAttribute("src");
+      frame.sandbox = mode === "app"
+        ? "allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-downloads"
+        : "allow-scripts allow-same-origin";
+      frame.srcdoc = compiledHtml;
+      await saveCurrentProject();
+    } catch (error) {
+      console.error(error);
+      state.compiled = false;
+      elements.previewEmptyState.classList.remove("hidden");
+      setCompileStatus("Compile error", error.message, "error");
     }
-    await saveCurrentProject();
-  } catch (error) {
-    console.error(error);
-    elements.previewEmptyState.classList.remove("hidden");
-    setCompileStatus("Compile error", error.message, "error");
-  }
+  }, 80);
 }
 
-function downloadOutput() {
-  if (!state.currentOutput) return;
-  if (state.currentOutput.mode === "app") return;
-  const link = document.createElement("a");
-  link.href = state.currentOutput.url;
-  link.download = state.currentOutput.filename || "htmlleaf.pdf";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+function downloadHTML() {
+  if (!state.activeProject) return;
+  const activeNode = getNode(state.activeProject, state.activeFileId);
+  const fallbackEntry = getEntryFile(state.activeProject);
+  const targetNode = activeNode && !isImageNode(activeNode) ? activeNode : fallbackEntry;
+  if (!targetNode) {
+    alert("No downloadable text file is selected.");
+    return;
+  }
+  const fileName = targetNode.name || "document.html";
+  const source = targetNode.id === state.activeFileId && !isImageNode(targetNode)
+    ? editor.getValue()
+    : (targetNode.content || state.lastCompiledHtml || "");
+  const blob = new Blob([source], { type: "text/html;charset=utf-8" });
+  const anchor = document.createElement("a");
+  anchor.href = URL.createObjectURL(blob);
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  setTimeout(() => URL.revokeObjectURL(anchor.href), 2000);
+}
+
+function downloadPDF() {
+  if (!state.compiled) {
+    alert("Please compile first.");
+    return;
+  }
+  if (state.lastCompiledMode === "app") {
+    alert("App mode is an interactive preview, not a PDF export.");
+    return;
+  }
+
+  const button = elements.downloadPdfButton;
+  button.disabled = true;
+  button.textContent = "Generating...";
+  setCompileStatus("Exporting", "Generating PDF from the compiled preview.", "working");
+
+  try {
+    const iframeDoc = elements.previewFrame.contentDocument || elements.previewFrame.contentWindow?.document;
+    let styleMarkup = "";
+    const styleEls = iframeDoc.querySelectorAll("style,link[rel='stylesheet']");
+    styleEls.forEach((styleEl) => {
+      styleMarkup += styleEl.outerHTML;
+    });
+
+    elements.pdfRender.innerHTML = styleMarkup + (iframeDoc.body ? iframeDoc.body.innerHTML : "");
+    const width = elements.pdfRender.scrollWidth;
+    const height = elements.pdfRender.scrollHeight;
+    elements.pdfRender.style.width = `${width}px`;
+
+    setTimeout(() => {
+      window.html2canvas(elements.pdfRender, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        width,
+        height,
+        windowWidth: width,
+        windowHeight: height,
+        scrollX: 0,
+        scrollY: 0,
+        logging: false
+      }).then((canvas) => {
+        elements.pdfRender.innerHTML = "";
+        elements.pdfRender.style.width = "";
+        const jsPDF = window.jspdf.jsPDF;
+        const pxToMm = 25.4 / 96;
+        const pdfWidth = width * pxToMm;
+        const pdfHeight = height * pxToMm;
+        const pdf = new jsPDF({
+          orientation: pdfWidth > pdfHeight ? "l" : "p",
+          unit: "mm",
+          format: [pdfWidth, pdfHeight]
+        });
+        pdf.addImage(canvas.toDataURL("image/jpeg", 0.97), "JPEG", 0, 0, pdfWidth, pdfHeight);
+        const fileName = (state.lastCompiledFileName.replace(/\.html?$/i, "") || "document") + ".pdf";
+        pdf.save(fileName);
+        button.disabled = false;
+        button.textContent = "PDF";
+        setCompileStatus("Compiled", `PDF saved: ${fileName}`, "ok");
+      }).catch((error) => {
+        elements.pdfRender.innerHTML = "";
+        elements.pdfRender.style.width = "";
+        button.disabled = false;
+        button.textContent = "PDF";
+        alert(`PDF error: ${error.message}`);
+        setCompileStatus("Compile error", error.message, "error");
+      });
+    }, 300);
+  } catch (error) {
+    elements.pdfRender.innerHTML = "";
+    elements.pdfRender.style.width = "";
+    button.disabled = false;
+    button.textContent = "PDF";
+    alert(`PDF error: ${error.message}`);
+    setCompileStatus("Compile error", error.message, "error");
+  }
 }
 
 function parseGitHubUrl(url) {
@@ -1691,7 +1692,8 @@ function attachEventHandlers() {
     markProjectDirty();
   });
   elements.compileButton.addEventListener("click", () => compileProject());
-  elements.downloadOutputButton.addEventListener("click", downloadOutput);
+  elements.downloadHtmlButton.addEventListener("click", downloadHTML);
+  elements.downloadPdfButton.addEventListener("click", downloadPDF);
   elements.saveProjectButton.addEventListener("click", () => saveCurrentProject());
   elements.pageSize.addEventListener("change", markProjectDirty);
   elements.pageOrientation.addEventListener("change", markProjectDirty);

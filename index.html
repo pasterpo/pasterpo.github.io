@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="./assets/styles.css">
 </head>
 <body>
+  <div id="pdf-render"></div>
   <div class="app-shell">
     <header class="site-header">
       <div class="brand-group">
@@ -68,13 +69,13 @@
         <div class="section-header">
           <div>
             <p class="eyebrow">Projects</p>
-          <h2>Your work lives here.</h2>
+            <h2>Your work lives here.</h2>
+          </div>
+          <div class="section-actions">
+            <button class="ghost-button" id="import-repo-button">Import Repo</button>
+            <button class="primary-button" id="new-project-button">New Project</button>
+          </div>
         </div>
-        <div class="section-actions">
-          <button class="ghost-button" id="import-repo-button">Import Repo</button>
-          <button class="primary-button" id="new-project-button">New Project</button>
-        </div>
-      </div>
         <div class="auth-gate" id="landing-auth-gate">
           <h3>Sign in to unlock synced projects and compile gating.</h3>
           <p>Logged-in projects render in this central grid instead of the old left-edge rail, keeping the landing flow clean and workspace-specific.</p>
@@ -193,7 +194,8 @@
           </div>
           <div class="preview-actions">
             <button class="ghost-button" id="save-project-button">Save</button>
-            <button class="ghost-button" id="download-output-button">Download</button>
+            <button class="ghost-button" id="download-html-button">HTML</button>
+            <button class="ghost-button" id="download-pdf-button">PDF</button>
             <button class="primary-button" id="compile-button">Compile</button>
           </div>
         </div>

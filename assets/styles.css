@@ -38,6 +38,16 @@ body {
   overflow: hidden;
 }
 
+#pdf-render {
+  position: fixed;
+  left: -99999px;
+  top: 0;
+  background: #ffffff;
+  overflow: visible;
+  z-index: -1;
+  pointer-events: none;
+}
+
 button,
 input,
 select,
@@ -65,9 +75,8 @@ button {
   justify-content: space-between;
   gap: 18px;
   padding: 14px 22px;
-  background: rgba(255, 255, 255, 0.92);
+  background: #ffffff;
   border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(10px);
 }
 
 .brand-group,
@@ -234,7 +243,7 @@ button {
   background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
   border: 1px solid var(--border);
   border-radius: 28px;
-  padding: 30px;
+  padding: 24px 28px;
   box-shadow: var(--shadow);
 }
 
@@ -396,6 +405,7 @@ button {
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
+  background: #f7f8fa;
 }
 
 .workspace-sidebar-header,
@@ -404,6 +414,12 @@ button {
 .preview-statusbar {
   padding: 16px;
   border-bottom: 1px solid var(--border);
+}
+
+.workspace-sidebar-header,
+.editor-header,
+.preview-header {
+  background: #f9fafb;
 }
 
 .workspace-sidebar-header h2 {
@@ -417,6 +433,7 @@ button {
   gap: 8px;
   padding: 16px;
   border-bottom: 1px solid var(--border);
+  background: #f9fafb;
 }
 
 .tree-panel {
@@ -524,6 +541,11 @@ button {
   align-items: flex-end;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.preview-actions .primary-button {
+  min-width: 120px;
+  justify-content: center;
 }
 
 .preview-mode-controls label {
