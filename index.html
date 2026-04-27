@@ -139,9 +139,11 @@
 
         <div class="workspace-panel-tabs" role="tablist" aria-label="Workspace sections">
           <button class="workspace-panel-tab active" data-sidebar-panel="files">Files</button>
+          <button class="workspace-panel-tab" data-sidebar-panel="search">Search</button>
           <button class="workspace-panel-tab" data-sidebar-panel="outline">Outline</button>
-          <button class="workspace-panel-tab" data-sidebar-panel="snippets">Snippets</button>
-          <button class="workspace-panel-tab" data-sidebar-panel="activity">Activity</button>
+          <button class="workspace-panel-tab" data-sidebar-panel="comments">Comments</button>
+          <button class="workspace-panel-tab" data-sidebar-panel="history">History</button>
+          <button class="workspace-panel-tab" data-sidebar-panel="tools">Tools</button>
         </div>
 
         <section class="workspace-panel active" data-sidebar-panel-view="files">
@@ -172,18 +174,58 @@
           <div class="outline-panel" id="outline-panel"></div>
         </section>
 
-        <section class="workspace-panel" data-sidebar-panel-view="snippets">
+        <section class="workspace-panel" data-sidebar-panel-view="search">
           <div class="sidebar-panel-copy">
-            <p>Insert starter blocks for the current language without leaving the editor.</p>
+            <label class="field compact-field">
+              <span>Search project</span>
+              <input type="search" id="workspace-search-input" placeholder="Find text across all files">
+            </label>
           </div>
-          <div class="snippet-panel" id="snippet-panel"></div>
+          <div class="search-panel" id="workspace-search-results"></div>
         </section>
 
-        <section class="workspace-panel" data-sidebar-panel-view="activity">
+        <section class="workspace-panel" data-sidebar-panel-view="comments">
           <div class="sidebar-panel-copy">
-            <p>Recent workspace actions stay attached to this project while you edit, compile, and import.</p>
+            <p>Lightweight per-file comments for review notes and reminders while you edit.</p>
           </div>
-          <div class="activity-panel" id="activity-panel"></div>
+          <div class="comments-panel">
+            <div class="comments-header">
+              <strong id="comments-file-label">No file selected</strong>
+              <button class="ghost-button compact" id="comment-current-line-button">Comment on current line</button>
+            </div>
+            <label class="field compact-field comment-field">
+              <span>New comment</span>
+              <textarea id="comment-input" rows="4" placeholder="Write a note about the current file or line"></textarea>
+            </label>
+            <div class="comments-list" id="comments-panel"></div>
+          </div>
+        </section>
+
+        <section class="workspace-panel" data-sidebar-panel-view="history">
+          <div class="sidebar-panel-copy">
+            <p>Project snapshots are created from meaningful saves and compiles so you can roll back safely.</p>
+          </div>
+          <div class="history-panel" id="history-panel"></div>
+        </section>
+
+        <section class="workspace-panel" data-sidebar-panel-view="tools">
+          <div class="sidebar-panel-copy">
+            <p>Reusable snippets and a running activity feed stay close to the editor.</p>
+          </div>
+          <div class="tools-panel">
+            <div class="tools-block">
+              <div class="tools-block-header">
+                <strong>Snippets</strong>
+              </div>
+              <div class="snippet-panel" id="snippet-panel"></div>
+            </div>
+            <div class="tools-block">
+              <div class="tools-block-header">
+                <strong>Activity</strong>
+              </div>
+              <div class="activity-panel" id="activity-panel"></div>
+            </div>
+          </div>
         </section>
 
         <div class="sidebar-footnote">
@@ -198,7 +240,8 @@
           <div class="editor-actions">
             <button class="ghost-button compact" id="editor-wrap-toggle">Wrap Off</button>
             <button class="ghost-button compact" id="editor-format-button">Format</button>
-            <span class="editor-shortcuts">Ctrl+S save | Ctrl+Enter compile | Ctrl+Shift+F format</span>
+            <button class="ghost-button compact" id="command-palette-button">Command</button>
+            <span class="editor-shortcuts">Ctrl+S save | Ctrl+Enter compile | Ctrl+Shift+F format | Ctrl+K command</span>
           </div>
           <div class="tab-strip" id="tab-strip"></div>
           <div class="editor-meta">
@@ -209,6 +252,8 @@
         </div>
         <textarea id="editor"></textarea>
       </section>
+
+      <div class="workspace-resizer" id="workspace-resizer" aria-hidden="true"></div>
 
       <section class="preview-pane">
         <div class="preview-header">
@@ -250,6 +295,18 @@
         <div class="preview-statusbar">
           <span id="compile-status">Ready</span>
           <span id="compile-detail">No compile has run yet.</span>
+        </div>
+
+        <div class="preview-toolbar">
+          <div class="preview-toolbar-group">
+            <button class="ghost-button compact" id="preview-refresh-button">Refresh</button>
+            <button class="ghost-button compact" id="preview-fit-button">Fit</button>
+          </div>
+          <div class="preview-toolbar-group">
+            <button class="ghost-button compact" id="preview-zoom-out-button">-</button>
+            <span class="preview-zoom-label" id="preview-zoom-label">100%</span>
+            <button class="ghost-button compact" id="preview-zoom-in-button">+</button>
+          </div>
         </div>
 
         <div class="preview-frame-wrap" id="preview-frame-wrap">
@@ -319,6 +376,19 @@
         <button class="ghost-button" data-close-modal="repo-modal">Cancel</button>
         <button class="primary-button" id="repo-submit">Import</button>
       </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop hidden" id="command-palette-modal">
+    <div class="modal-card palette-card">
+      <button class="modal-close" data-close-modal="command-palette-modal" aria-label="Close">x</button>
+      <p class="eyebrow">Command Palette</p>
+      <h2>Jump to any workspace action</h2>
+      <label class="field">
+        <span>Command</span>
+        <input type="search" id="command-palette-input" placeholder="Search actions, panels, files">
+      </label>
+      <div class="palette-results" id="command-palette-results"></div>
     </div>
   </div>
 

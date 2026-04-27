@@ -43,9 +43,11 @@ const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "svg", "webp", "b
 const PREVIEWABLE_EXTENSIONS = new Set(["html", "htm"]);
 const SIDEBAR_PANEL_LABELS = {
   files: "Files",
+  search: "Search",
   outline: "Outline",
-  snippets: "Snippets",
-  activity: "Activity"
+  comments: "Comments",
+  history: "History",
+  tools: "Tools"
 };
 const SNIPPETS_BY_FAMILY = {
   html: [
@@ -238,10 +240,17 @@ const elements = {
   compileDetail: document.getElementById("compile-detail"),
   previewFrame: document.getElementById("preview-frame"),
   previewEmptyState: document.getElementById("preview-empty-state"),
+  previewFrameWrap: document.getElementById("preview-frame-wrap"),
+  previewRefreshButton: document.getElementById("preview-refresh-button"),
+  previewFitButton: document.getElementById("preview-fit-button"),
+  previewZoomOutButton: document.getElementById("preview-zoom-out-button"),
+  previewZoomInButton: document.getElementById("preview-zoom-in-button"),
+  previewZoomLabel: document.getElementById("preview-zoom-label"),
   pdfRender: document.getElementById("pdf-render"),
   editorWrapToggle: document.getElementById("editor-wrap-toggle"),
   editorFormatButton: document.getElementById("editor-format-button"),
   editorBadges: document.getElementById("editor-badges"),
+  workspaceResizer: document.getElementById("workspace-resizer"),
   projectName: document.getElementById("project-name"),
   tabStrip: document.getElementById("tab-strip"),
   activeFilePath: document.getElementById("active-file-path"),
@@ -252,7 +261,14 @@ const elements = {
   workspaceMenuToggle: document.getElementById("workspace-menu-toggle"),
   renameProjectAction: document.getElementById("rename-project-action"),
   fileTreeSearch: document.getElementById("file-tree-search"),
+  workspaceSearchInput: document.getElementById("workspace-search-input"),
+  workspaceSearchResults: document.getElementById("workspace-search-results"),
   outlinePanel: document.getElementById("outline-panel"),
+  commentsFileLabel: document.getElementById("comments-file-label"),
+  commentCurrentLineButton: document.getElementById("comment-current-line-button"),
+  commentInput: document.getElementById("comment-input"),
+  commentsPanel: document.getElementById("comments-panel"),
+  historyPanel: document.getElementById("history-panel"),
   snippetPanel: document.getElementById("snippet-panel"),
   activityPanel: document.getElementById("activity-panel"),
   workspacePanelLabel: document.getElementById("workspace-panel-label"),
@@ -274,6 +290,10 @@ const elements = {
   repoInput: document.getElementById("repo-input"),
   repoMessage: document.getElementById("repo-message"),
   repoSubmit: document.getElementById("repo-submit"),
+  commandPaletteButton: document.getElementById("command-palette-button"),
+  commandPaletteModal: document.getElementById("command-palette-modal"),
+  commandPaletteInput: document.getElementById("command-palette-input"),
+  commandPaletteResults: document.getElementById("command-palette-results"),
   imageUploadInput: document.getElementById("image-upload-input")
 };
 
@@ -296,6 +316,9 @@ const state = {
   editorWrapEnabled: false,
   sidebarPanel: "files",
   treeFilter: "",
+  workspaceSearchQuery: "",
+  previewZoom: 1,
+  editorPaneWidth: null,
   objectUrls: new Set(),
   saveTimer: null,
   panelRefreshTimer: null,
@@ -419,6 +442,8 @@ function createStarterProject(name = "Untitled Project") {
     pageOrientation: "portrait",
     selectedFileId: htmlId,
     openFileIds: [htmlId, cssId, jsId],
+    comments: [],
+    historySnapshots: [],
     activityLog: [
       createActivityEntry("Project created", "Starter HTML, CSS, JavaScript, and asset files are ready.", "system")
     ],
@@ -591,6 +616,8 @@ function upgradeProjectShape(rawProject) {
   if (!project.compileMode) project.compileMode = "freestyle";
   if (!project.pageSize) project.pageSize = "A4";
   if (!project.pageOrientation) project.pageOrientation = "portrait";
+  if (!Array.isArray(project.comments)) project.comments = [];
+  if (!Array.isArray(project.historySnapshots)) project.historySnapshots = [];
   if (!Array.isArray(project.activityLog)) project.activityLog = [];
   project.nodes = project.nodes.map((node) => ({
     content: "",
@@ -700,11 +727,95 @@ function renderEditorBadges() {
   elements.editorBadges.innerHTML = badges.map((label) => `<span class="editor-badge">${escapeHtml(label)}</span>`).join("");
 }
 
+function updatePreviewZoom() {
+  const zoom = Math.max(0.5, Math.min(2, state.previewZoom || 1));
+  state.previewZoom = zoom;
+  elements.previewFrame.style.transform = `scale(${zoom})`;
+  elements.previewFrame.style.width = `${100 / zoom}%`;
+  elements.previewFrame.style.height = `${100 / zoom}%`;
+  elements.previewZoomLabel.textContent = `${Math.round(zoom * 100)}%`;
+}
+
+function setPreviewZoom(nextZoom) {
+  state.previewZoom = nextZoom;
+  updatePreviewZoom();
+}
+
+function refreshPreview() {
+  if (!state.compiled || !state.lastCompiledHtml) {
+    setCompileStatus("Refresh skipped", "Compile once before refreshing the preview.", "error");
+    return;
+  }
+  const frame = elements.previewFrame;
+  frame.removeAttribute("src");
+  frame.srcdoc = state.lastCompiledHtml;
+  setCompileStatus("Preview refreshed", "The current compiled output was reloaded in place.", "ok");
+}
+
+function applyWorkspaceEditorWidth() {
+  if (!state.editorPaneWidth) {
+    elements.workspaceView.style.removeProperty("--editor-pane-width");
+    return;
+  }
+  elements.workspaceView.style.setProperty("--editor-pane-width", `${state.editorPaneWidth}px`);
+}
+
+function beginWorkspaceResize(event) {
+  if (window.innerWidth <= 980) return;
+  event.preventDefault();
+  const shellRect = elements.workspaceView.getBoundingClientRect();
+  const sidebarWidth = elements.workspaceSidebar.getBoundingClientRect().width;
+  const minWidth = 360;
+  const maxWidth = Math.max(minWidth, shellRect.width - sidebarWidth - 10 - 360);
+
+  const onMove = (moveEvent) => {
+    const next = moveEvent.clientX - shellRect.left - sidebarWidth;
+    state.editorPaneWidth = Math.max(minWidth, Math.min(maxWidth, next));
+    applyWorkspaceEditorWidth();
+  };
+
+  const onUp = () => {
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onUp);
+  };
+
+  document.addEventListener("mousemove", onMove);
+  document.addEventListener("mouseup", onUp);
+}
+
+function snapshotProjectForHistory(project) {
+  const copy = cloneProject(project);
+  copy.historySnapshots = [];
+  return serializeProject(copy);
+}
+
+function createHistorySnapshot(reason) {
+  if (!state.activeProject) return;
+  if (!Array.isArray(state.activeProject.historySnapshots)) state.activeProject.historySnapshots = [];
+  const data = snapshotProjectForHistory(state.activeProject);
+  if (state.activeProject.historySnapshots[0]?.data === data) return;
+  state.activeProject.historySnapshots.unshift({
+    id: uuid(),
+    reason,
+    at: new Date().toISOString(),
+    data
+  });
+  state.activeProject.historySnapshots = state.activeProject.historySnapshots.slice(0, 12);
+}
+
+function currentTextFile(node) {
+  return node && node.type === "file" && !isImageNode(node) ? node : null;
+}
+
 function scheduleWorkspaceRefresh() {
   clearTimeout(state.panelRefreshTimer);
   state.panelRefreshTimer = setTimeout(() => {
+    renderWorkspaceSearch();
     renderOutlinePanel();
+    renderCommentsPanel();
+    renderHistoryPanel();
     renderSnippetPanel();
+    renderActivityPanel();
     renderEditorBadges();
   }, 120);
 }
@@ -847,6 +958,247 @@ function renderActivityPanel() {
   ].join("")).join("")}</div>`;
 }
 
+function collectSearchResults(query) {
+  if (!state.activeProject) return [];
+  const needle = query.trim().toLowerCase();
+  if (!needle) return [];
+  const results = [];
+  state.activeProject.nodes
+    .filter((node) => currentTextFile(node))
+    .forEach((node) => {
+      const content = node.id === state.activeFileId ? editor.getValue() : (node.content || "");
+      const lines = content.split("\n");
+      lines.forEach((line, index) => {
+        if (!line.toLowerCase().includes(needle)) return;
+        results.push({
+          fileId: node.id,
+          fileName: getNodePath(state.activeProject, node.id) || node.name,
+          line: index,
+          preview: line.trim() || "(blank line)"
+        });
+      });
+    });
+  return results.slice(0, 80);
+}
+
+function jumpToFileLine(fileId, line) {
+  if (!state.activeProject) return;
+  if (state.activeFileId !== fileId) activateFile(fileId);
+  editor.focus();
+  editor.setCursor({ line, ch: 0 });
+  editor.scrollIntoView({ line, ch: 0 }, 140);
+}
+
+function renderWorkspaceSearch() {
+  const query = state.workspaceSearchQuery.trim();
+  if (!query) {
+    setEmptyPanel(elements.workspaceSearchResults, "Search across your project to find text in any file.");
+    return;
+  }
+  const results = collectSearchResults(query);
+  if (!results.length) {
+    setEmptyPanel(elements.workspaceSearchResults, `No matches for "${query}".`);
+    return;
+  }
+  elements.workspaceSearchResults.innerHTML = `<div class="search-results-list">${results.map((result) => [
+    `<button class="search-result" type="button" data-search-file-id="${result.fileId}" data-search-line="${result.line}">`,
+    `  <h4>${escapeHtml(result.fileName)}</h4>`,
+    `  <p>Line ${result.line + 1}</p>`,
+    `  <code>${escapeHtml(result.preview)}</code>`,
+    "</button>"
+  ].join("")).join("")}</div>`;
+  qsa("[data-search-file-id]", elements.workspaceSearchResults).forEach((button) => {
+    button.addEventListener("click", () => {
+      jumpToFileLine(button.dataset.searchFileId, Number(button.dataset.searchLine) || 0);
+      setCompileStatus("Search jump", `Opened ${button.querySelector("h4")?.textContent || "result"}.`, "ok");
+    });
+  });
+}
+
+function renderCommentsPanel() {
+  if (!state.activeProject) {
+    elements.commentsFileLabel.textContent = "No file selected";
+    setEmptyPanel(elements.commentsPanel, "Open a project to add comments.");
+    return;
+  }
+  if (!Array.isArray(state.activeProject.comments)) state.activeProject.comments = [];
+  const activeNode = getNode(state.activeProject, state.activeFileId);
+  const fileNode = currentTextFile(activeNode);
+  elements.commentsFileLabel.textContent = fileNode ? (getNodePath(state.activeProject, fileNode.id) || fileNode.name) : "No text file selected";
+  const comments = fileNode
+    ? state.activeProject.comments.filter((item) => item.fileId === fileNode.id)
+    : [];
+  if (!comments.length) {
+    setEmptyPanel(elements.commentsPanel, "No comments yet for this file. Add one from the current editor line.");
+    return;
+  }
+  elements.commentsPanel.innerHTML = `<div class="comments-items">${comments.map((comment) => [
+    `<article class="comment-card${comment.resolved ? " resolved" : ""}">`,
+    `  <h4>${escapeHtml(comment.title || `Line ${comment.line + 1}`)}</h4>`,
+    `  <p>${escapeHtml(comment.text)}</p>`,
+    "  <div class=\"comment-card-actions\">",
+    `    <span class="activity-badge">${escapeHtml(comment.resolved ? "RESOLVED" : `LINE ${comment.line + 1}`)}</span>`,
+    `    <span>${escapeHtml(timestampLabel(comment.createdAt))}</span>`,
+    "  </div>",
+    "  <div class=\"comment-card-actions\">",
+    `    <button class="ghost-button compact" type="button" data-comment-jump="${comment.id}">Jump</button>`,
+    `    <button class="ghost-button compact" type="button" data-comment-toggle="${comment.id}">${comment.resolved ? "Reopen" : "Resolve"}</button>`,
+    "  </div>",
+    "</article>"
+  ].join("")).join("")}</div>`;
+  qsa("[data-comment-jump]", elements.commentsPanel).forEach((button) => {
+    button.addEventListener("click", () => {
+      const comment = state.activeProject.comments.find((item) => item.id === button.dataset.commentJump);
+      if (!comment) return;
+      jumpToFileLine(comment.fileId, comment.line);
+      setCompileStatus("Comment jump", `Moved to line ${comment.line + 1}.`, "ok");
+    });
+  });
+  qsa("[data-comment-toggle]", elements.commentsPanel).forEach((button) => {
+    button.addEventListener("click", () => toggleCommentState(button.dataset.commentToggle));
+  });
+}
+
+function addCurrentLineComment() {
+  if (!state.activeProject || !state.activeFileId) return;
+  const activeNode = getNode(state.activeProject, state.activeFileId);
+  const fileNode = currentTextFile(activeNode);
+  const text = elements.commentInput.value.trim();
+  if (!fileNode) {
+    setCompileStatus("Comment blocked", "Comments can only be attached to text files.", "error");
+    return;
+  }
+  if (!text) {
+    setCompileStatus("Comment blocked", "Write a comment before adding it.", "error");
+    return;
+  }
+  if (!Array.isArray(state.activeProject.comments)) state.activeProject.comments = [];
+  const cursor = editor.getCursor();
+  state.activeProject.comments.unshift({
+    id: uuid(),
+    fileId: fileNode.id,
+    line: cursor.line,
+    title: `${fileNode.name} line ${cursor.line + 1}`,
+    text,
+    resolved: false,
+    createdAt: new Date().toISOString()
+  });
+  state.activeProject.comments = state.activeProject.comments.slice(0, 120);
+  elements.commentInput.value = "";
+  recordProjectActivity("Added comment", `Comment added on ${fileNode.name} line ${cursor.line + 1}.`, "review");
+  renderCommentsPanel();
+  scheduleAutosave();
+}
+
+function toggleCommentState(commentId) {
+  if (!state.activeProject || !Array.isArray(state.activeProject.comments)) return;
+  const comment = state.activeProject.comments.find((item) => item.id === commentId);
+  if (!comment) return;
+  comment.resolved = !comment.resolved;
+  recordProjectActivity(comment.resolved ? "Resolved comment" : "Reopened comment", `${comment.title} was ${comment.resolved ? "resolved" : "reopened"}.`, "review");
+  renderCommentsPanel();
+  scheduleAutosave();
+}
+
+function renderHistoryPanel() {
+  if (!state.activeProject || !Array.isArray(state.activeProject.historySnapshots) || !state.activeProject.historySnapshots.length) {
+    setEmptyPanel(elements.historyPanel, "History snapshots appear here after meaningful saves and compiles.");
+    return;
+  }
+  elements.historyPanel.innerHTML = `<div class="history-list">${state.activeProject.historySnapshots.map((snapshot) => [
+    "<article class=\"history-card\">",
+    `  <h4>${escapeHtml(snapshot.reason)}</h4>`,
+    `  <p>${escapeHtml(new Date(snapshot.at).toLocaleString())}</p>`,
+    "  <div class=\"history-card-actions\">",
+    `    <span class="activity-badge">SNAPSHOT</span>`,
+    `    <button class="ghost-button compact" type="button" data-history-restore="${snapshot.id}">Restore</button>`,
+    "  </div>",
+    "</article>"
+  ].join("")).join("")}</div>`;
+  qsa("[data-history-restore]", elements.historyPanel).forEach((button) => {
+    button.addEventListener("click", () => restoreHistorySnapshot(button.dataset.historyRestore));
+  });
+}
+
+async function restoreHistorySnapshot(snapshotId) {
+  if (!state.activeProject) return;
+  const snapshot = (state.activeProject.historySnapshots || []).find((item) => item.id === snapshotId);
+  if (!snapshot) return;
+  if (!confirm(`Restore snapshot "${snapshot.reason}" from ${new Date(snapshot.at).toLocaleString()}?`)) return;
+  const previousHistory = [...(state.activeProject.historySnapshots || [])];
+  const restored = deserializeProject(snapshot.data);
+  restored.id = state.activeProject.id;
+  restored.historySnapshots = previousHistory;
+  restored.activityLog = Array.isArray(restored.activityLog) ? restored.activityLog : [];
+  state.activeProject = upgradeProjectShape(restored);
+  state.activeProjectId = restored.id;
+  elements.projectName.textContent = state.activeProject.name;
+  renderTree();
+  renderTabs();
+  activateFile(state.activeProject.selectedFileId || findFirstFileId(state.activeProject));
+  recordProjectActivity("Restored snapshot", `${snapshot.reason} was restored.`, "history");
+  renderHistoryPanel();
+  await saveCurrentProject({ statusMessage: true });
+}
+
+function getCommandPaletteCommands() {
+  return [
+    { title: "New file", detail: "Create a new file in the selected folder.", action: () => createNode("file") },
+    { title: "New folder", detail: "Create a new folder in the selected location.", action: () => createNode("folder") },
+    { title: "Rename project", detail: "Rename the current project.", action: () => renameActiveProject() },
+    { title: "Rename selected node", detail: "Rename the selected file or folder.", action: () => renameSelectedNode() },
+    { title: "Delete selected node", detail: "Delete the selected file or folder.", action: () => deleteSelectedNode() },
+    { title: "Save project", detail: "Save the active project.", action: () => saveCurrentProject({ logActivity: true, statusMessage: true }) },
+    { title: "Compile project", detail: "Run the current compile mode.", action: () => compileProject() },
+    { title: "Refresh preview", detail: "Reload the current compiled preview in place.", action: () => refreshPreview() },
+    { title: "Preview fit", detail: "Reset preview zoom to 100%.", action: () => setPreviewZoom(1) },
+    { title: "Preview zoom in", detail: "Increase the preview zoom level.", action: () => setPreviewZoom(state.previewZoom + 0.1) },
+    { title: "Preview zoom out", detail: "Decrease the preview zoom level.", action: () => setPreviewZoom(state.previewZoom - 0.1) },
+    { title: "Download HTML", detail: "Download the selected text file.", action: () => downloadHTML() },
+    { title: "Download PDF", detail: "Export the current compiled PDF.", action: () => downloadPDF() },
+    { title: "Open files panel", detail: "Switch the left rail to files.", action: () => setSidebarPanel("files") },
+    { title: "Open search panel", detail: "Switch the left rail to project search.", action: () => setSidebarPanel("search") },
+    { title: "Open outline panel", detail: "Switch the left rail to document outline.", action: () => setSidebarPanel("outline") },
+    { title: "Open comments panel", detail: "Switch the left rail to comments.", action: () => setSidebarPanel("comments") },
+    { title: "Open history panel", detail: "Switch the left rail to snapshots.", action: () => setSidebarPanel("history") },
+    { title: "Open tools panel", detail: "Switch the left rail to tools.", action: () => setSidebarPanel("tools") },
+    { title: "Toggle wrap", detail: "Turn editor line wrapping on or off.", action: () => toggleEditorWrap() },
+    { title: "Format current file", detail: "Run the built-in formatter for the active file.", action: () => formatCurrentFile() },
+    { title: "Add comment on current line", detail: "Create a review note on the editor cursor line.", action: () => addCurrentLineComment() }
+  ];
+}
+
+function renderCommandPalette(query = "") {
+  const needle = query.trim().toLowerCase();
+  const commands = getCommandPaletteCommands().filter((command) => {
+    if (!needle) return true;
+    return `${command.title} ${command.detail}`.toLowerCase().includes(needle);
+  });
+  if (!commands.length) {
+    setEmptyPanel(elements.commandPaletteResults, "No commands match this search.");
+    return;
+  }
+  elements.commandPaletteResults.innerHTML = commands.map((command, index) => [
+    `<button class="palette-command" type="button" data-command-index="${index}">`,
+    `  <strong>${escapeHtml(command.title)}</strong>`,
+    `  <small>${escapeHtml(command.detail)}</small>`,
+    "</button>"
+  ].join("")).join("");
+  qsa("[data-command-index]", elements.commandPaletteResults).forEach((button) => {
+    button.addEventListener("click", async () => {
+      closeModal(elements.commandPaletteModal);
+      await commands[Number(button.dataset.commandIndex)].action();
+    });
+  });
+}
+
+function openCommandPalette(initialQuery = "") {
+  openModal(elements.commandPaletteModal);
+  elements.commandPaletteInput.value = initialQuery;
+  renderCommandPalette(initialQuery);
+  elements.commandPaletteInput.focus();
+}
+
 function updateWrapButton() {
   elements.editorWrapToggle.textContent = state.editorWrapEnabled ? "Wrap On" : "Wrap Off";
 }
@@ -973,7 +1325,9 @@ function openWorkspace(projectId) {
   state.lastCompiledMode = state.activeProject.compileMode || "freestyle";
   state.lastCompiledFileName = "document.html";
   state.treeFilter = "";
+  state.workspaceSearchQuery = "";
   state.sidebarPanel = "files";
+  state.previewZoom = 1;
   elements.previewFrame.src = "about:blank";
   elements.previewFrame.removeAttribute("srcdoc");
   elements.previewEmptyState.classList.remove("hidden");
@@ -983,17 +1337,24 @@ function openWorkspace(projectId) {
     ? "Cloud sync active."
     : "Local draft mode.";
   elements.fileTreeSearch.value = "";
+  elements.workspaceSearchInput.value = "";
+  elements.commentInput.value = "";
   elements.compileMode.value = state.activeProject.compileMode || "freestyle";
   elements.pageSize.value = state.activeProject.pageSize || "A4";
   elements.pageOrientation.value = state.activeProject.pageOrientation || "portrait";
   syncPagedControls();
+  applyWorkspaceEditorWidth();
+  updatePreviewZoom();
   setSidebarPanel(state.sidebarPanel);
   elements.landingView.classList.add("hidden");
   elements.workspaceView.classList.remove("hidden");
   renderTree();
+  renderWorkspaceSearch();
   renderActivityPanel();
   renderSnippetPanel();
   renderOutlinePanel();
+  renderCommentsPanel();
+  renderHistoryPanel();
   renderEditorBadges();
   renderTabs();
   activateFile(state.activeFileId || findFirstFileId(state.activeProject));
@@ -1050,6 +1411,9 @@ function renderProjectGrid() {
   projects.forEach((project) => {
     const card = document.createElement("article");
     card.className = "project-card";
+    const fileCount = project.nodes.filter((node) => node.type === "file").length;
+    const commentCount = Array.isArray(project.comments) ? project.comments.filter((item) => !item.resolved).length : 0;
+    const snapshotCount = Array.isArray(project.historySnapshots) ? project.historySnapshots.length : 0;
     const updated = new Date(project.updatedAt).toLocaleString(undefined, {
       month: "short",
       day: "numeric",
@@ -1057,7 +1421,14 @@ function renderProjectGrid() {
       minute: "2-digit"
     });
     card.innerHTML = [
-      `<div><h3>${escapeHtml(project.name)}</h3><p>${escapeHtml(projectSummary(project))}</p></div>`,
+      "<div class=\"project-card-top\">",
+      `  <div><h3>${escapeHtml(project.name)}</h3><p>${escapeHtml(projectSummary(project))}</p></div>`,
+      "  <div class=\"project-card-metrics\">",
+      `    <span class="project-metric">${fileCount} files</span>`,
+      `    <span class="project-metric">${commentCount} comments</span>`,
+      `    <span class="project-metric">${snapshotCount} snapshots</span>`,
+      "  </div>",
+      "</div>",
       `<div class="project-card-footer"><span>${updated}</span><div class="project-card-actions"></div></div>`
     ].join("");
     const actions = qs(".project-card-actions", card);
@@ -1518,13 +1889,14 @@ async function saveProjectRecord(project) {
 
 async function saveCurrentProject(options = {}) {
   if (!state.activeProject) return;
-  const { logActivity = false, statusMessage = false } = options;
+  const { logActivity = false, statusMessage = false, snapshotReason = "" } = options;
   state.activeProject.compileMode = elements.compileMode.value;
   state.activeProject.pageSize = elements.pageSize.value;
   state.activeProject.pageOrientation = elements.pageOrientation.value;
   state.activeProject.openFileIds = [...state.openFileIds];
   state.activeProject.selectedFileId = state.activeFileId;
   state.activeProject.updatedAt = new Date().toISOString();
+  if (snapshotReason) createHistorySnapshot(snapshotReason);
   if (logActivity) {
     recordProjectActivity("Saved project", `${state.activeProject.name} was saved to ${state.backendReachable && state.currentUser ? "cloud sync" : "local drafts"}.`, "save");
   }
@@ -1537,6 +1909,7 @@ async function saveCurrentProject(options = {}) {
   else state.projects.unshift(cloneProject(state.activeProject));
   renderProjectGrid();
   elements.workspaceStorageLabel.textContent = state.backendReachable && state.currentUser ? "Cloud sync active." : "Local draft mode.";
+  renderHistoryPanel();
   if (statusMessage) {
     setCompileStatus("Saved", `${state.activeProject.name} was saved successfully.`, "ok");
   }
@@ -1907,6 +2280,7 @@ async function compileProject() {
             ? `Preview compiled with ${elements.pageSize.value} ${elements.pageOrientation.value} framing.`
             : "Preview compiled from the document as-is.";
         setCompileStatus("Compiled", detail, "ok");
+        updatePreviewZoom();
         recordProjectActivity("Compiled project", `${entryFile.name} compiled in ${mode} mode.`, "compile");
         renderEditorBadges();
         scheduleAutosave();
@@ -1917,7 +2291,7 @@ async function compileProject() {
         ? "allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-downloads"
         : "allow-scripts allow-same-origin";
       frame.srcdoc = compiledHtml;
-      await saveCurrentProject();
+      await saveCurrentProject({ snapshotReason: `Compiled ${mode}` });
     } catch (error) {
       console.error(error);
       state.compiled = false;
@@ -2214,6 +2588,24 @@ function attachEventHandlers() {
     state.treeFilter = event.target.value.trim();
     renderTree();
   });
+  elements.workspaceSearchInput.addEventListener("input", (event) => {
+    state.workspaceSearchQuery = event.target.value;
+    renderWorkspaceSearch();
+  });
+  elements.commentCurrentLineButton.addEventListener("click", addCurrentLineComment);
+  elements.commentInput.addEventListener("keydown", (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+      event.preventDefault();
+      addCurrentLineComment();
+    }
+  });
+  elements.commandPaletteButton.addEventListener("click", () => openCommandPalette());
+  elements.commandPaletteInput.addEventListener("input", (event) => renderCommandPalette(event.target.value));
+  elements.previewRefreshButton.addEventListener("click", refreshPreview);
+  elements.previewFitButton.addEventListener("click", () => setPreviewZoom(1));
+  elements.previewZoomOutButton.addEventListener("click", () => setPreviewZoom(state.previewZoom - 0.1));
+  elements.previewZoomInButton.addEventListener("click", () => setPreviewZoom(state.previewZoom + 0.1));
+  elements.workspaceResizer.addEventListener("mousedown", beginWorkspaceResize);
   document.getElementById("new-file-action").addEventListener("click", () => createNode("file"));
   document.getElementById("new-folder-action").addEventListener("click", () => createNode("folder"));
   document.getElementById("rename-node-action").addEventListener("click", renameSelectedNode);
@@ -2234,7 +2626,7 @@ function attachEventHandlers() {
   elements.compileButton.addEventListener("click", () => compileProject());
   elements.downloadHtmlButton.addEventListener("click", downloadHTML);
   elements.downloadPdfButton.addEventListener("click", downloadPDF);
-  elements.saveProjectButton.addEventListener("click", () => saveCurrentProject({ logActivity: true, statusMessage: true }));
+  elements.saveProjectButton.addEventListener("click", () => saveCurrentProject({ logActivity: true, statusMessage: true, snapshotReason: "Manual save" }));
   elements.pageSize.addEventListener("change", () => {
     renderEditorBadges();
     markProjectDirty();
@@ -2282,6 +2674,21 @@ function attachEventHandlers() {
   elements.workspaceMenuToggle.addEventListener("click", () => {
     elements.workspaceSidebar.classList.toggle("hidden-mobile");
   });
+
+  document.addEventListener("keydown", (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      openCommandPalette();
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth <= 980) {
+      elements.workspaceView.style.removeProperty("--editor-pane-width");
+    } else {
+      applyWorkspaceEditorWidth();
+    }
+  });
 }
 
 function initEditor() {
@@ -2292,12 +2699,14 @@ function initEditor() {
     indentUnit: 2,
     tabSize: 2,
     extraKeys: {
-      "Ctrl-S": () => saveCurrentProject({ logActivity: true, statusMessage: true }),
-      "Cmd-S": () => saveCurrentProject({ logActivity: true, statusMessage: true }),
+      "Ctrl-S": () => saveCurrentProject({ logActivity: true, statusMessage: true, snapshotReason: "Manual save" }),
+      "Cmd-S": () => saveCurrentProject({ logActivity: true, statusMessage: true, snapshotReason: "Manual save" }),
       "Ctrl-Enter": () => compileProject(),
       "Cmd-Enter": () => compileProject(),
       "Ctrl-Shift-F": () => formatCurrentFile(),
-      "Cmd-Shift-F": () => formatCurrentFile()
+      "Cmd-Shift-F": () => formatCurrentFile(),
+      "Ctrl-K": () => openCommandPalette(),
+      "Cmd-K": () => openCommandPalette()
     }
   });
   editor.on("change", syncEditorToProject);
@@ -2310,6 +2719,7 @@ async function boot() {
   setAuthMode("signin");
   routeTo("projects");
   syncPagedControls();
+  updatePreviewZoom();
   await initSupabase();
   await updateUserCount();
   await loadProjects();
