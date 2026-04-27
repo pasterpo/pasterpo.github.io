@@ -41,13 +41,33 @@ const LANGUAGE_BY_EXTENSION = {
 
 const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp", "ico"]);
 const PREVIEWABLE_EXTENSIONS = new Set(["html", "htm"]);
+const PROJECT_PRESET_META = {
+  blank: {
+    title: "Blank workspace",
+    defaultName: "Untitled Project"
+  },
+  app: {
+    title: "App playground",
+    defaultName: "Interactive App"
+  },
+  report: {
+    title: "Report layout",
+    defaultName: "Web Report"
+  },
+  docs: {
+    title: "Docs site",
+    defaultName: "Docs Site"
+  }
+};
 const SIDEBAR_PANEL_LABELS = {
   files: "Files",
+  assets: "Assets",
   search: "Search",
   outline: "Outline",
   comments: "Comments",
   history: "History",
-  tools: "Tools"
+  tools: "Tools",
+  settings: "Settings"
 };
 const SNIPPETS_BY_FAMILY = {
   html: [
@@ -217,6 +237,7 @@ const SNIPPETS_BY_FAMILY = {
 
 const elements = {
   landingView: document.getElementById("landing-view"),
+  landingHero: document.getElementById("landing-hero"),
   workspaceView: document.getElementById("workspace-view"),
   headerAuthButton: document.getElementById("header-auth-button"),
   headerNewProject: document.getElementById("header-new-project"),
@@ -225,7 +246,11 @@ const elements = {
   usersPanelCount: document.getElementById("users-panel-count"),
   usersPanelCopy: document.getElementById("users-panel-copy"),
   backendBanner: document.getElementById("backend-banner"),
+  dashboardStats: document.getElementById("dashboard-stats"),
+  dashboardRecent: document.getElementById("dashboard-recent"),
   projectsGrid: document.getElementById("projects-grid"),
+  projectSearchInput: document.getElementById("project-search-input"),
+  projectSortSelect: document.getElementById("project-sort-select"),
   landingAuthGate: document.getElementById("landing-auth-gate"),
   compileMode: document.getElementById("compile-mode"),
   pageSize: document.getElementById("page-size"),
@@ -261,6 +286,7 @@ const elements = {
   workspaceMenuToggle: document.getElementById("workspace-menu-toggle"),
   renameProjectAction: document.getElementById("rename-project-action"),
   fileTreeSearch: document.getElementById("file-tree-search"),
+  assetsPanel: document.getElementById("assets-panel"),
   workspaceSearchInput: document.getElementById("workspace-search-input"),
   workspaceSearchResults: document.getElementById("workspace-search-results"),
   outlinePanel: document.getElementById("outline-panel"),
@@ -271,6 +297,13 @@ const elements = {
   historyPanel: document.getElementById("history-panel"),
   snippetPanel: document.getElementById("snippet-panel"),
   activityPanel: document.getElementById("activity-panel"),
+  recentFilesPanel: document.getElementById("recent-files-panel"),
+  projectNameInput: document.getElementById("project-name-input"),
+  entryFileSelect: document.getElementById("entry-file-select"),
+  settingsCompileMode: document.getElementById("settings-compile-mode"),
+  settingsPageSize: document.getElementById("settings-page-size"),
+  settingsPageOrientation: document.getElementById("settings-page-orientation"),
+  applySettingsButton: document.getElementById("apply-settings-button"),
   workspacePanelLabel: document.getElementById("workspace-panel-label"),
   authModal: document.getElementById("auth-modal"),
   authTitle: document.getElementById("auth-title"),
@@ -316,6 +349,8 @@ const state = {
   editorWrapEnabled: false,
   sidebarPanel: "files",
   treeFilter: "",
+  projectSearchQuery: "",
+  projectSort: "recent",
   workspaceSearchQuery: "",
   previewZoom: 1,
   editorPaneWidth: null,
@@ -440,8 +475,10 @@ function createStarterProject(name = "Untitled Project") {
     compileMode: "freestyle",
     pageSize: "A4",
     pageOrientation: "portrait",
+    entryFileId: htmlId,
     selectedFileId: htmlId,
     openFileIds: [htmlId, cssId, jsId],
+    recentFileIds: [htmlId, cssId, jsId],
     comments: [],
     historySnapshots: [],
     activityLog: [
@@ -616,6 +653,8 @@ function upgradeProjectShape(rawProject) {
   if (!project.compileMode) project.compileMode = "freestyle";
   if (!project.pageSize) project.pageSize = "A4";
   if (!project.pageOrientation) project.pageOrientation = "portrait";
+  if (!project.entryFileId) project.entryFileId = project.selectedFileId || null;
+  if (!Array.isArray(project.recentFileIds)) project.recentFileIds = [];
   if (!Array.isArray(project.comments)) project.comments = [];
   if (!Array.isArray(project.historySnapshots)) project.historySnapshots = [];
   if (!Array.isArray(project.activityLog)) project.activityLog = [];
@@ -631,6 +670,170 @@ function upgradeProjectShape(rawProject) {
   if (!Array.isArray(project.openFileIds) || !project.openFileIds.length) {
     project.openFileIds = project.selectedFileId ? [project.selectedFileId] : [];
   }
+  return project;
+}
+
+function buildPresetProject(presetKey, name = "") {
+  const label = name || ({
+    blank: "Blank Workspace",
+    app: "App Playground",
+    report: "Report Workspace",
+    docs: "Docs Workspace"
+  }[presetKey] || "Untitled Project");
+  const project = createStarterProject(label);
+  const filesByName = Object.fromEntries(project.nodes.filter((node) => node.type === "file").map((node) => [node.name, node]));
+  const htmlFile = filesByName["index.html"];
+  const cssFile = filesByName["styles.css"];
+  const jsFile = filesByName["script.js"];
+
+  if (presetKey === "app") {
+    htmlFile.content = [
+      "<!DOCTYPE html>",
+      "<html lang=\"en\">",
+      "<head>",
+      "  <meta charset=\"UTF-8\">",
+      "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">",
+      "  <title>App Playground</title>",
+      "  <link rel=\"stylesheet\" href=\"styles.css\">",
+      "</head>",
+      "<body>",
+      "  <div class=\"app-shell\">",
+      "    <aside class=\"app-sidebar\">",
+      "      <h1>HTMLLeaf App</h1>",
+      "      <button class=\"nav-link\" data-view=\"overview\">Overview</button>",
+      "      <button class=\"nav-link\" data-view=\"insights\">Insights</button>",
+      "      <button class=\"nav-link\" data-view=\"settings\">Settings</button>",
+      "    </aside>",
+      "    <main class=\"app-main\">",
+      "      <section class=\"panel\">",
+      "        <p class=\"eyebrow\">Interactive preview</p>",
+      "        <h2 id=\"panel-title\">Overview</h2>",
+      "        <p id=\"panel-copy\">Switch sections and see the preview update like a small product surface.</p>",
+      "      </section>",
+      "    </main>",
+      "  </div>",
+      "  <script src=\"script.js\"><\/script>",
+      "</body>",
+      "</html>"
+    ].join("\n");
+    cssFile.content = [
+      ":root { color-scheme: light; --bg: #eef2f6; --surface: #ffffff; --text: #17212b; --muted: #61707f; --accent: #0f6c5b; --border: #d9e1e8; }",
+      "body { margin: 0; font-family: 'IBM Plex Sans', sans-serif; background: var(--bg); color: var(--text); }",
+      ".app-shell { min-height: 100vh; display: grid; grid-template-columns: 220px 1fr; }",
+      ".app-sidebar { background: #17212b; color: white; padding: 28px 20px; display: flex; flex-direction: column; gap: 12px; }",
+      ".app-sidebar h1 { font-size: 1.05rem; margin: 0 0 14px; }",
+      ".nav-link { border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: white; padding: 12px 14px; border-radius: 12px; text-align: left; }",
+      ".app-main { padding: 34px; }",
+      ".panel { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 28px; max-width: 760px; box-shadow: 0 18px 36px rgba(20,31,41,0.08); }",
+      ".eyebrow { text-transform: uppercase; letter-spacing: 0.12em; font: 600 12px/1.4 'IBM Plex Sans', sans-serif; color: var(--accent); margin: 0 0 12px; }",
+      "h2 { margin: 0 0 14px; font-size: clamp(1.9rem, 4vw, 3rem); }",
+      "p { line-height: 1.7; color: var(--muted); }"
+    ].join("\n");
+    jsFile.content = [
+      "const views = {",
+      "  overview: { title: 'Overview', copy: 'Switch sections and see the preview update like a small product surface.' },",
+      "  insights: { title: 'Insights', copy: 'Use this workspace to prototype dashboards, product pages, and micro apps.' },",
+      "  settings: { title: 'Settings', copy: 'App mode is sandboxed, so you can test interactions safely in HTMLLeaf.' }",
+      "};",
+      "",
+      "const title = document.getElementById('panel-title');",
+      "const copy = document.getElementById('panel-copy');",
+      "document.querySelectorAll('[data-view]').forEach((button) => {",
+      "  button.addEventListener('click', () => {",
+      "    const view = views[button.dataset.view];",
+      "    if (!view || !title || !copy) return;",
+      "    title.textContent = view.title;",
+      "    copy.textContent = view.copy;",
+      "  });",
+      "});"
+    ].join("\n");
+  } else if (presetKey === "report") {
+    htmlFile.content = [
+      "<!DOCTYPE html>",
+      "<html lang=\"en\">",
+      "<head>",
+      "  <meta charset=\"UTF-8\">",
+      "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">",
+      "  <title>Report Workspace</title>",
+      "  <link rel=\"stylesheet\" href=\"styles.css\">",
+      "</head>",
+      "<body>",
+      "  <main class=\"report\">",
+      "    <header class=\"report-header\">",
+      "      <p class=\"eyebrow\">Executive Summary</p>",
+      "      <h1>Quarterly Product Report</h1>",
+      "      <p class=\"lede\">A polished starting point for PDF-first work in Freestyle or Paged mode.</p>",
+      "    </header>",
+      "    <section class=\"report-grid\">",
+      "      <article class=\"report-card\"><h2>Highlights</h2><p>Summarize the key outcomes from this reporting period.</p></article>",
+      "      <article class=\"report-card\"><h2>Risks</h2><p>Capture the main constraints, blockers, or dependencies.</p></article>",
+      "      <article class=\"report-card\"><h2>Next Steps</h2><p>List the concrete actions planned after this report.</p></article>",
+      "    </section>",
+      "  </main>",
+      "</body>",
+      "</html>"
+    ].join("\n");
+    cssFile.content = [
+      "body { margin: 0; font-family: Georgia, serif; color: #17212b; background: #f3efe7; }",
+      ".report { max-width: 880px; margin: 0 auto; padding: 64px 36px 80px; }",
+      ".report-header { margin-bottom: 36px; }",
+      ".eyebrow { text-transform: uppercase; letter-spacing: 0.14em; font: 600 12px/1.3 'IBM Plex Sans', sans-serif; color: #0f6c5b; margin: 0 0 14px; }",
+      "h1 { margin: 0; font-size: clamp(2.6rem, 4vw, 4rem); line-height: 1.03; }",
+      ".lede { font-size: 1.1rem; line-height: 1.8; color: #4a5662; margin-top: 16px; }",
+      ".report-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }",
+      ".report-card { background: #ffffff; border: 1px solid #d7d2c6; border-radius: 18px; padding: 22px; box-shadow: 0 12px 26px rgba(20,31,41,0.06); }",
+      ".report-card h2 { margin: 0 0 12px; font-size: 1.1rem; }",
+      ".report-card p { margin: 0; line-height: 1.7; color: #5d6975; }"
+    ].join("\n");
+    jsFile.content = "console.log('Report preset loaded');";
+  } else if (presetKey === "docs") {
+    htmlFile.content = [
+      "<!DOCTYPE html>",
+      "<html lang=\"en\">",
+      "<head>",
+      "  <meta charset=\"UTF-8\">",
+      "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">",
+      "  <title>Docs Workspace</title>",
+      "  <link rel=\"stylesheet\" href=\"styles.css\">",
+      "</head>",
+      "<body>",
+      "  <div class=\"docs-shell\">",
+      "    <nav class=\"docs-nav\">",
+      "      <h1>HTMLLeaf Docs</h1>",
+      "      <a href=\"#intro\">Introduction</a>",
+      "      <a href=\"#setup\">Setup</a>",
+      "      <a href=\"#api\">API</a>",
+      "    </nav>",
+      "    <main class=\"docs-content\">",
+      "      <section id=\"intro\"><p class=\"eyebrow\">Introduction</p><h2>Write clear project documentation.</h2><p>Use headings and sections to build a searchable, structured documentation page.</p></section>",
+      "      <section id=\"setup\"><h2>Setup</h2><p>Add install steps, local dev notes, and required environment values.</p></section>",
+      "      <section id=\"api\"><h2>API</h2><p>Document routes, options, response shapes, and examples.</p></section>",
+      "    </main>",
+      "  </div>",
+      "</body>",
+      "</html>"
+    ].join("\n");
+    cssFile.content = [
+      "body { margin: 0; font-family: 'IBM Plex Sans', sans-serif; background: #f5f7f9; color: #17212b; }",
+      ".docs-shell { min-height: 100vh; display: grid; grid-template-columns: 240px 1fr; }",
+      ".docs-nav { background: #ffffff; border-right: 1px solid #d9e1e8; padding: 28px 20px; position: sticky; top: 0; height: 100vh; }",
+      ".docs-nav h1 { margin: 0 0 18px; font-size: 1rem; }",
+      ".docs-nav a { display: block; padding: 10px 0; color: #465563; text-decoration: none; }",
+      ".docs-content { padding: 40px 44px 60px; max-width: 920px; }",
+      ".docs-content section { background: #ffffff; border: 1px solid #d9e1e8; border-radius: 18px; padding: 24px; margin-bottom: 20px; }",
+      ".eyebrow { text-transform: uppercase; letter-spacing: 0.12em; font-size: 12px; font-weight: 600; color: #0f6c5b; margin: 0 0 10px; }",
+      "h2 { margin: 0 0 12px; font-size: 1.6rem; }",
+      "p { margin: 0; line-height: 1.72; color: #61707f; }"
+    ].join("\n");
+    jsFile.content = "console.log('Docs preset loaded');";
+  }
+
+  project.compileMode = presetKey === "app" ? "app" : "freestyle";
+  project.entryFileId = htmlFile.id;
+  project.selectedFileId = htmlFile.id;
+  project.openFileIds = [htmlFile.id, cssFile.id, jsFile.id];
+  project.recentFileIds = [htmlFile.id, cssFile.id, jsFile.id];
+  project.activityLog.unshift(createActivityEntry("Preset loaded", `${label} started from the ${presetKey} preset.`, "system"));
   return project;
 }
 
@@ -810,12 +1013,15 @@ function currentTextFile(node) {
 function scheduleWorkspaceRefresh() {
   clearTimeout(state.panelRefreshTimer);
   state.panelRefreshTimer = setTimeout(() => {
+    renderAssetsPanel();
     renderWorkspaceSearch();
     renderOutlinePanel();
     renderCommentsPanel();
     renderHistoryPanel();
     renderSnippetPanel();
     renderActivityPanel();
+    renderRecentFilesPanel();
+    renderSettingsPanel();
     renderEditorBadges();
   }, 120);
 }
@@ -956,6 +1162,309 @@ function renderActivityPanel() {
     "  </div>",
     "</article>"
   ].join("")).join("")}</div>`;
+}
+
+function projectMetrics(project) {
+  return {
+    fileCount: project.nodes.filter((node) => node.type === "file").length,
+    imageCount: project.nodes.filter((node) => isImageNode(node)).length,
+    commentCount: Array.isArray(project.comments) ? project.comments.filter((item) => !item.resolved).length : 0,
+    snapshotCount: Array.isArray(project.historySnapshots) ? project.historySnapshots.length : 0
+  };
+}
+
+function renderDashboardPanels() {
+  const allProjects = [...state.projects];
+  const totalFiles = allProjects.reduce((sum, project) => sum + projectMetrics(project).fileCount, 0);
+  const totalComments = allProjects.reduce((sum, project) => sum + projectMetrics(project).commentCount, 0);
+  const totalSnapshots = allProjects.reduce((sum, project) => sum + projectMetrics(project).snapshotCount, 0);
+  const stats = [
+    `${allProjects.length} projects`,
+    `${totalFiles} files`,
+    `${totalComments} open comments`,
+    `${totalSnapshots} snapshots`,
+    state.backendReachable && state.currentUser ? "Cloud sync" : "Local drafts"
+  ];
+  elements.dashboardStats.innerHTML = stats.map((item) => `<span class="project-metric">${escapeHtml(item)}</span>`).join("");
+
+  if (!allProjects.length) {
+    setEmptyPanel(elements.dashboardRecent, "Create or import a project to build a recent activity list.");
+    return;
+  }
+  const recent = [...allProjects]
+    .sort((left, right) => new Date(right.updatedAt) - new Date(left.updatedAt))
+    .slice(0, 5);
+  elements.dashboardRecent.innerHTML = `<div class="recent-project-list">${recent.map((project) => {
+    const metrics = projectMetrics(project);
+    return [
+      `<button class="recent-project-item" type="button" data-open-project="${project.id}">`,
+      `  <strong>${escapeHtml(project.name)}</strong>`,
+      `  <small>${escapeHtml(`${metrics.fileCount} files · ${metrics.commentCount} comments`)}</small>`,
+      "</button>"
+    ].join("");
+  }).join("")}</div>`;
+  qsa("[data-open-project]", elements.dashboardRecent).forEach((button) => {
+    button.addEventListener("click", () => openWorkspace(button.dataset.openProject));
+  });
+}
+
+function filteredProjects() {
+  const query = state.projectSearchQuery.trim().toLowerCase();
+  let projects = [...state.projects];
+  if (query) {
+    projects = projects.filter((project) => {
+      const fileNames = project.nodes.filter((node) => node.type === "file").map((node) => node.name).join(" ");
+      const comments = (project.comments || []).map((item) => item.text || "").join(" ");
+      const haystack = `${project.name} ${fileNames} ${comments}`.toLowerCase();
+      return haystack.includes(query);
+    });
+  }
+
+  projects.sort((left, right) => {
+    if (state.projectSort === "alpha") return left.name.localeCompare(right.name);
+    if (state.projectSort === "files") return projectMetrics(right).fileCount - projectMetrics(left).fileCount;
+    if (state.projectSort === "comments") return projectMetrics(right).commentCount - projectMetrics(left).commentCount;
+    return new Date(right.updatedAt) - new Date(left.updatedAt);
+  });
+  return projects;
+}
+
+async function copyTextValue(value, successMessage) {
+  try {
+    await navigator.clipboard.writeText(value);
+    setCompileStatus("Copied", successMessage, "ok");
+  } catch {
+    setCompileStatus("Copy failed", "Clipboard access was blocked in this browser.", "error");
+  }
+}
+
+function insertTextAtCursor(value, detail) {
+  if (!state.activeProject || !state.activeFileId) return;
+  const activeNode = getNode(state.activeProject, state.activeFileId);
+  if (!currentTextFile(activeNode)) {
+    setCompileStatus("Insert blocked", "Open a text file before inserting content.", "error");
+    return;
+  }
+  editor.replaceRange(value, editor.getCursor());
+  setCompileStatus("Inserted", detail, "ok");
+}
+
+function renderAssetsPanel() {
+  if (!state.activeProject) {
+    setEmptyPanel(elements.assetsPanel, "Open a project to browse uploaded assets.");
+    return;
+  }
+  const assets = state.activeProject.nodes.filter((node) => node.type === "file" && isImageNode(node));
+  if (!assets.length) {
+    setEmptyPanel(elements.assetsPanel, "Upload images to build an asset library for the current project.");
+    return;
+  }
+  elements.assetsPanel.innerHTML = `<div class="asset-grid">${assets.map((asset) => {
+    const path = getNodePath(state.activeProject, asset.id);
+    return [
+      "<article class=\"asset-card\">",
+      `  <img src="${escapeHtml(asset.content || "")}" alt="${escapeHtml(asset.name)}">`,
+      `  <strong>${escapeHtml(asset.name)}</strong>`,
+      `  <small>${escapeHtml(path)}</small>`,
+      "  <div class=\"asset-actions\">",
+      `    <button class="ghost-button compact" type="button" data-copy-asset="${asset.id}">Copy Path</button>`,
+      `    <button class="ghost-button compact" type="button" data-insert-asset="${asset.id}">Insert</button>`,
+      "  </div>",
+      "</article>"
+    ].join("");
+  }).join("")}</div>`;
+  qsa("[data-copy-asset]", elements.assetsPanel).forEach((button) => {
+    button.addEventListener("click", async () => {
+      const path = getNodePath(state.activeProject, button.dataset.copyAsset);
+      await copyTextValue(path, `${path} copied to the clipboard.`);
+    });
+  });
+  qsa("[data-insert-asset]", elements.assetsPanel).forEach((button) => {
+    button.addEventListener("click", () => {
+      const path = getNodePath(state.activeProject, button.dataset.insertAsset);
+      insertTextAtCursor(path, `${path} inserted into the current file.`);
+    });
+  });
+}
+
+function renderRecentFilesPanel() {
+  if (!state.activeProject) {
+    setEmptyPanel(elements.recentFilesPanel, "Open a project to track recently visited files.");
+    return;
+  }
+  const recentIds = (state.activeProject.recentFileIds || []).filter((id) => getNode(state.activeProject, id));
+  if (!recentIds.length) {
+    setEmptyPanel(elements.recentFilesPanel, "Recent files will appear here as you move around the workspace.");
+    return;
+  }
+  elements.recentFilesPanel.innerHTML = `<div class="recent-file-list">${recentIds.slice(0, 8).map((fileId) => {
+    const node = getNode(state.activeProject, fileId);
+    const path = getNodePath(state.activeProject, fileId) || node.name;
+    return [
+      `<button class="recent-file-item" type="button" data-recent-file="${fileId}">`,
+      `  <strong>${escapeHtml(node.name)}</strong>`,
+      `  <small>${escapeHtml(path)}</small>`,
+      "</button>"
+    ].join("");
+  }).join("")}</div>`;
+  qsa("[data-recent-file]", elements.recentFilesPanel).forEach((button) => {
+    button.addEventListener("click", () => activateFile(button.dataset.recentFile));
+  });
+}
+
+function renderSettingsPanel() {
+  if (!state.activeProject) {
+    elements.projectNameInput.value = "";
+    elements.entryFileSelect.innerHTML = "";
+    elements.entryFileSelect.disabled = true;
+    return;
+  }
+  elements.projectNameInput.value = state.activeProject.name || "";
+  const previewableFiles = state.activeProject.nodes.filter((node) => node.type === "file" && PREVIEWABLE_EXTENSIONS.has(getExtension(node.name)));
+  if (!previewableFiles.length) {
+    elements.entryFileSelect.innerHTML = "<option value=\"\">No HTML entry files found</option>";
+    elements.entryFileSelect.disabled = true;
+  } else {
+    elements.entryFileSelect.disabled = false;
+    elements.entryFileSelect.innerHTML = previewableFiles.map((node) => {
+      const path = getNodePath(state.activeProject, node.id) || node.name;
+      const selected = (state.activeProject.entryFileId || getEntryFile(state.activeProject)?.id) === node.id ? " selected" : "";
+      return `<option value="${node.id}"${selected}>${escapeHtml(path)}</option>`;
+    }).join("");
+  }
+  elements.settingsCompileMode.value = state.activeProject.compileMode || "freestyle";
+  elements.settingsPageSize.value = state.activeProject.pageSize || "A4";
+  elements.settingsPageOrientation.value = state.activeProject.pageOrientation || "portrait";
+}
+
+function nextProjectName(originalName) {
+  const existing = new Set(state.projects.map((project) => project.name.toLowerCase()));
+  let attempt = `${originalName} Copy`;
+  let counter = 2;
+  while (existing.has(attempt.toLowerCase())) {
+    attempt = `${originalName} Copy ${counter}`;
+    counter += 1;
+  }
+  return attempt;
+}
+
+async function duplicateProject(projectId) {
+  const source = state.projects.find((project) => project.id === projectId);
+  if (!source) return;
+  const duplicate = upgradeProjectShape(cloneProject(source));
+  duplicate.id = uuid();
+  duplicate.name = nextProjectName(source.name);
+  duplicate.updatedAt = new Date().toISOString();
+  duplicate.activityLog = [
+    createActivityEntry("Duplicated project", `${source.name} was copied into a new workspace.`, "system"),
+    ...(duplicate.activityLog || [])
+  ].slice(0, 36);
+  await saveProjectRecord(duplicate);
+  await loadProjects();
+  openWorkspace(duplicate.id);
+  setCompileStatus("Project duplicated", `${duplicate.name} is ready for editing.`, "ok");
+}
+
+function downloadProjectBundle(projectId) {
+  const project = state.activeProject && (!projectId || state.activeProject.id === projectId)
+    ? state.activeProject
+    : state.projects.find((entry) => entry.id === projectId);
+  if (!project) return;
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    project: cloneProject(project)
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = rememberUrl(URL.createObjectURL(blob));
+  const anchor = document.createElement("a");
+  const safeName = project.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "htmlleaf-project";
+  anchor.href = url;
+  anchor.download = `${safeName}.htmlleaf.json`;
+  anchor.click();
+  if (state.activeProjectId === project.id) {
+    recordProjectActivity("Downloaded backup", `${project.name} was exported as a project backup.`, "export");
+  }
+  setCompileStatus("Backup ready", `${project.name} was downloaded as a JSON backup.`, "ok");
+}
+
+function nextSiblingName(project, parentId, originalName) {
+  const siblings = getChildren(project, parentId).map((node) => node.name.toLowerCase());
+  const dotIndex = originalName.lastIndexOf(".");
+  const base = dotIndex > 0 ? originalName.slice(0, dotIndex) : originalName;
+  const ext = dotIndex > 0 ? originalName.slice(dotIndex) : "";
+  let attempt = `${base} copy${ext}`;
+  let counter = 2;
+  while (siblings.includes(attempt.toLowerCase())) {
+    attempt = `${base} copy ${counter}${ext}`;
+    counter += 1;
+  }
+  return attempt;
+}
+
+function duplicateSubtree(project, node, parentId, nameOverride = "") {
+  const duplicateId = uuid();
+  const duplicate = {
+    ...cloneProject(node),
+    id: duplicateId,
+    parentId,
+    name: nameOverride || node.name
+  };
+  project.nodes.push(duplicate);
+  if (node.type === "folder") {
+    getChildren(project, node.id).forEach((child) => {
+      duplicateSubtree(project, cloneProject(child), duplicateId);
+    });
+  }
+  return duplicate;
+}
+
+function duplicateSelectedNode() {
+  if (!state.activeProject) return;
+  const currentId = state.selectedTreeNodeId || state.activeFileId || activeContainerId();
+  const node = getNode(state.activeProject, currentId);
+  if (!node || node.parentId === null) return;
+  const copyName = nextSiblingName(state.activeProject, node.parentId, node.name);
+  const duplicate = duplicateSubtree(state.activeProject, node, node.parentId, copyName);
+  markProjectDirty();
+  recordProjectActivity("Duplicated node", `${node.name} was copied as ${duplicate.name}.`, "edit");
+  renderTree();
+  if (duplicate.type === "file") activateFile(duplicate.id);
+}
+
+function setSelectedAsEntry() {
+  if (!state.activeProject) return;
+  const currentId = state.selectedTreeNodeId || state.activeFileId;
+  const node = getNode(state.activeProject, currentId);
+  if (!node || node.type !== "file" || !PREVIEWABLE_EXTENSIONS.has(getExtension(node.name))) {
+    setCompileStatus("Entry blocked", "Select an HTML file to set it as the compile entry.", "error");
+    return;
+  }
+  state.activeProject.entryFileId = node.id;
+  elements.entryFileLabel.textContent = node.name;
+  renderSettingsPanel();
+  markProjectDirty();
+  recordProjectActivity("Updated entry file", `${node.name} is now the compile entry file.`, "edit");
+  setCompileStatus("Entry updated", `${node.name} is now the active compile entry.`, "ok");
+}
+
+async function applyProjectSettings() {
+  if (!state.activeProject) return;
+  const nextName = elements.projectNameInput.value.trim() || state.activeProject.name;
+  state.activeProject.name = nextName;
+  state.activeProject.entryFileId = elements.entryFileSelect.value || state.activeProject.entryFileId;
+  state.activeProject.compileMode = elements.settingsCompileMode.value;
+  state.activeProject.pageSize = elements.settingsPageSize.value;
+  state.activeProject.pageOrientation = elements.settingsPageOrientation.value;
+  elements.projectName.textContent = nextName;
+  elements.compileMode.value = state.activeProject.compileMode;
+  elements.pageSize.value = state.activeProject.pageSize;
+  elements.pageOrientation.value = state.activeProject.pageOrientation;
+  syncPagedControls();
+  elements.entryFileLabel.textContent = getEntryFile(state.activeProject)?.name || "None";
+  markProjectDirty();
+  recordProjectActivity("Applied settings", `${nextName} project settings were updated.`, "settings");
+  await saveCurrentProject({ statusMessage: true });
 }
 
 function collectSearchResults(query) {
@@ -1146,8 +1655,12 @@ function getCommandPaletteCommands() {
     { title: "New file", detail: "Create a new file in the selected folder.", action: () => createNode("file") },
     { title: "New folder", detail: "Create a new folder in the selected location.", action: () => createNode("folder") },
     { title: "Rename project", detail: "Rename the current project.", action: () => renameActiveProject() },
+    { title: "Duplicate project", detail: "Create a copy of the current project workspace.", action: () => duplicateProject(state.activeProjectId) },
+    { title: "Download project backup", detail: "Download a JSON backup of the current project.", action: () => downloadProjectBundle(state.activeProjectId) },
     { title: "Rename selected node", detail: "Rename the selected file or folder.", action: () => renameSelectedNode() },
+    { title: "Duplicate selected node", detail: "Copy the current file or folder in the tree.", action: () => duplicateSelectedNode() },
     { title: "Delete selected node", detail: "Delete the selected file or folder.", action: () => deleteSelectedNode() },
+    { title: "Set selected file as entry", detail: "Make the selected HTML file the compile entry.", action: () => setSelectedAsEntry() },
     { title: "Save project", detail: "Save the active project.", action: () => saveCurrentProject({ logActivity: true, statusMessage: true }) },
     { title: "Compile project", detail: "Run the current compile mode.", action: () => compileProject() },
     { title: "Refresh preview", detail: "Reload the current compiled preview in place.", action: () => refreshPreview() },
@@ -1157,11 +1670,14 @@ function getCommandPaletteCommands() {
     { title: "Download HTML", detail: "Download the selected text file.", action: () => downloadHTML() },
     { title: "Download PDF", detail: "Export the current compiled PDF.", action: () => downloadPDF() },
     { title: "Open files panel", detail: "Switch the left rail to files.", action: () => setSidebarPanel("files") },
+    { title: "Open assets panel", detail: "Switch the left rail to uploaded assets.", action: () => setSidebarPanel("assets") },
     { title: "Open search panel", detail: "Switch the left rail to project search.", action: () => setSidebarPanel("search") },
     { title: "Open outline panel", detail: "Switch the left rail to document outline.", action: () => setSidebarPanel("outline") },
     { title: "Open comments panel", detail: "Switch the left rail to comments.", action: () => setSidebarPanel("comments") },
     { title: "Open history panel", detail: "Switch the left rail to snapshots.", action: () => setSidebarPanel("history") },
     { title: "Open tools panel", detail: "Switch the left rail to tools.", action: () => setSidebarPanel("tools") },
+    { title: "Open settings panel", detail: "Switch the left rail to project settings.", action: () => setSidebarPanel("settings") },
+    { title: "Apply project settings", detail: "Save the current settings panel values.", action: () => applyProjectSettings() },
     { title: "Toggle wrap", detail: "Turn editor line wrapping on or off.", action: () => toggleEditorWrap() },
     { title: "Format current file", detail: "Run the built-in formatter for the active file.", action: () => formatCurrentFile() },
     { title: "Add comment on current line", detail: "Create a review note on the editor cursor line.", action: () => addCurrentLineComment() }
@@ -1304,6 +1820,7 @@ function routeTo(route) {
   qsa(".route-panel").forEach((panel) => panel.classList.remove("active"));
   const routePanel = document.getElementById(`route-${route}`);
   if (routePanel) routePanel.classList.add("active");
+  elements.landingHero.classList.toggle("hidden", route !== "projects");
   elements.landingView.classList.remove("hidden");
   elements.workspaceView.classList.add("hidden");
 }
@@ -1349,12 +1866,15 @@ function openWorkspace(projectId) {
   elements.landingView.classList.add("hidden");
   elements.workspaceView.classList.remove("hidden");
   renderTree();
+  renderAssetsPanel();
   renderWorkspaceSearch();
   renderActivityPanel();
   renderSnippetPanel();
   renderOutlinePanel();
   renderCommentsPanel();
   renderHistoryPanel();
+  renderRecentFilesPanel();
+  renderSettingsPanel();
   renderEditorBadges();
   renderTabs();
   activateFile(state.activeFileId || findFirstFileId(state.activeProject));
@@ -1391,17 +1911,20 @@ function syncPagedControls() {
 }
 
 function renderProjectGrid() {
-  const projects = [...state.projects].sort((left, right) => new Date(right.updatedAt) - new Date(left.updatedAt));
+  const projects = filteredProjects();
   elements.projectsGrid.innerHTML = "";
+  elements.projectSearchInput.value = state.projectSearchQuery;
+  elements.projectSortSelect.value = state.projectSort;
   const gateVisible = state.backendReachable && !state.currentUser;
   elements.landingAuthGate.classList.toggle("hidden", !gateVisible);
+  renderDashboardPanels();
 
   if (!projects.length) {
     const emptyCard = document.createElement("article");
     emptyCard.className = "project-card";
     emptyCard.innerHTML = [
-      "<h3>No projects yet</h3>",
-      `<p>${gateVisible ? "Sign in to start your synced workspace." : "Create a project or import a public GitHub repository to get started."}</p>`,
+      `<h3>${state.projectSearchQuery ? "No matching projects" : "No projects yet"}</h3>`,
+      `<p>${state.projectSearchQuery ? "Try a different name or clear the current project search." : (gateVisible ? "Sign in to start your synced workspace." : "Create a project or import a public GitHub repository to get started.")}</p>`,
       "<div class=\"project-card-footer\"><span>Starter workspace ready</span></div>"
     ].join("");
     elements.projectsGrid.appendChild(emptyCard);
@@ -1437,6 +1960,18 @@ function renderProjectGrid() {
     openButton.textContent = "Open";
     openButton.addEventListener("click", () => openWorkspace(project.id));
     actions.appendChild(openButton);
+
+    const duplicateButton = document.createElement("button");
+    duplicateButton.className = "ghost-button compact";
+    duplicateButton.textContent = "Duplicate";
+    duplicateButton.addEventListener("click", () => duplicateProject(project.id));
+    actions.appendChild(duplicateButton);
+
+    const exportButton = document.createElement("button");
+    exportButton.className = "ghost-button compact";
+    exportButton.textContent = "Backup";
+    exportButton.addEventListener("click", () => downloadProjectBundle(project.id));
+    actions.appendChild(exportButton);
 
     const deleteButton = document.createElement("button");
     deleteButton.className = "ghost-button compact";
@@ -1562,6 +2097,7 @@ function activateFile(fileId) {
   state.activeFileId = fileId;
   state.selectedTreeNodeId = fileId;
   state.activeProject.selectedFileId = fileId;
+  state.activeProject.recentFileIds = [fileId, ...(state.activeProject.recentFileIds || []).filter((id) => id !== fileId)].slice(0, 10);
   if (!state.openFileIds.includes(fileId)) state.openFileIds.push(fileId);
   state.activeProject.openFileIds = [...state.openFileIds];
   suspendEditorSync = true;
@@ -1672,6 +2208,7 @@ async function renameActiveProject() {
   if (!nextName) return;
   state.activeProject.name = nextName.trim();
   elements.projectName.textContent = state.activeProject.name;
+  elements.projectNameInput.value = state.activeProject.name;
   markProjectDirty();
   recordProjectActivity("Renamed project", `Project is now named ${state.activeProject.name}.`, "edit");
   renderProjectGrid();
@@ -1932,7 +2469,15 @@ async function deleteProject(projectId) {
 }
 
 async function createProject(name) {
-  const project = createStarterProject(name);
+  const project = buildPresetProject("blank", name);
+  await saveProjectRecord(project);
+  await loadProjects();
+  openWorkspace(project.id);
+  recordProjectActivity("Opened workspace", `${project.name} is ready for editing.`, "system");
+}
+
+async function createProjectFromPreset(presetKey, name = "") {
+  const project = buildPresetProject(presetKey, name);
   await saveProjectRecord(project);
   await loadProjects();
   openWorkspace(project.id);
@@ -2024,7 +2569,7 @@ async function waitForFrameAssets(frame) {
 }
 
 function getEntryFile(project) {
-  const preferred = getNode(project, project.selectedFileId);
+  const preferred = getNode(project, project.entryFileId || project.selectedFileId);
   if (preferred && PREVIEWABLE_EXTENSIONS.has(getExtension(preferred.name))) return preferred;
   return (
     project.nodes.find((node) => node.type === "file" && /^index\.html?$/i.test(node.name)) ||
@@ -2560,6 +3105,30 @@ function attachEventHandlers() {
     await createProject(name.trim());
   });
   document.getElementById("header-new-project").addEventListener("click", () => document.getElementById("new-project-button").click());
+  qsa("[data-project-preset]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      if (!requireAuth("Sign in to create a new project.")) return;
+      const presetKey = button.dataset.projectPreset;
+      const meta = PROJECT_PRESET_META[presetKey] || PROJECT_PRESET_META.blank;
+      const name = await promptForValue({
+        label: "Project",
+        title: meta.title,
+        copy: "Start from a structured workspace preset and rename it any time.",
+        value: meta.defaultName,
+        confirmLabel: "Create project"
+      });
+      if (!name) return;
+      await createProjectFromPreset(presetKey, name.trim());
+    });
+  });
+  elements.projectSearchInput.addEventListener("input", (event) => {
+    state.projectSearchQuery = event.target.value;
+    renderProjectGrid();
+  });
+  elements.projectSortSelect.addEventListener("change", (event) => {
+    state.projectSort = event.target.value;
+    renderProjectGrid();
+  });
 
   const openRepoModal = () => {
     setFormMessage(elements.repoMessage, "");
@@ -2609,8 +3178,11 @@ function attachEventHandlers() {
   document.getElementById("new-file-action").addEventListener("click", () => createNode("file"));
   document.getElementById("new-folder-action").addEventListener("click", () => createNode("folder"));
   document.getElementById("rename-node-action").addEventListener("click", renameSelectedNode);
+  document.getElementById("duplicate-node-action").addEventListener("click", duplicateSelectedNode);
   document.getElementById("delete-node-action").addEventListener("click", deleteSelectedNode);
+  document.getElementById("set-entry-action").addEventListener("click", setSelectedAsEntry);
   document.getElementById("upload-image-action").addEventListener("click", () => elements.imageUploadInput.click());
+  elements.applySettingsButton.addEventListener("click", applyProjectSettings);
   elements.imageUploadInput.addEventListener("change", async (event) => {
     await handleImageUpload(event.target.files);
     event.target.value = "";

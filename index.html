@@ -50,7 +50,7 @@
     <div class="status-banner hidden" id="backend-banner"></div>
 
     <main class="landing-shell" id="landing-view">
-      <section class="hero-panel">
+      <section class="hero-panel" id="landing-hero">
         <div class="hero-copy-block">
           <p class="eyebrow">Quarterfinal upgrade</p>
           <h1>Write HTML like a paper, ship it like an app.</h1>
@@ -108,8 +108,40 @@
               <span>GitHub import and asset upload</span>
               <span>Comments, history, and command palette</span>
             </div>
+            <div class="dashboard-side-block">
+              <h4>Quick Start</h4>
+              <div class="dashboard-quickstart">
+                <button class="ghost-button compact" data-project-preset="blank">Blank Workspace</button>
+                <button class="ghost-button compact" data-project-preset="app">App Playground</button>
+                <button class="ghost-button compact" data-project-preset="report">Report Layout</button>
+                <button class="ghost-button compact" data-project-preset="docs">Docs Site</button>
+              </div>
+            </div>
+            <div class="dashboard-side-block">
+              <h4>Workspace Stats</h4>
+              <div class="dashboard-stats" id="dashboard-stats"></div>
+            </div>
+            <div class="dashboard-side-block">
+              <h4>Recent Activity</h4>
+              <div class="dashboard-recent" id="dashboard-recent"></div>
+            </div>
           </aside>
           <div class="dashboard-main">
+            <div class="dashboard-toolbar">
+              <label class="field compact-field dashboard-field">
+                <span>Search projects</span>
+                <input type="search" id="project-search-input" placeholder="Find by name, file, note">
+              </label>
+              <label class="field compact-field dashboard-field">
+                <span>Sort</span>
+                <select id="project-sort-select">
+                  <option value="recent">Most Recent</option>
+                  <option value="alpha">Name A-Z</option>
+                  <option value="files">Most Files</option>
+                  <option value="comments">Most Comments</option>
+                </select>
+              </label>
+            </div>
             <div class="auth-gate" id="landing-auth-gate">
               <h3>Sign in to unlock synced projects and compile gating.</h3>
               <p>Logged-in projects render in this central grid instead of the old left-edge rail, keeping the landing flow clean and workspace-specific.</p>
@@ -179,11 +211,13 @@
 
         <div class="workspace-panel-tabs" role="tablist" aria-label="Workspace sections">
           <button class="workspace-panel-tab active" data-sidebar-panel="files">Files</button>
+          <button class="workspace-panel-tab" data-sidebar-panel="assets">Assets</button>
           <button class="workspace-panel-tab" data-sidebar-panel="search">Search</button>
           <button class="workspace-panel-tab" data-sidebar-panel="outline">Outline</button>
           <button class="workspace-panel-tab" data-sidebar-panel="comments">Comments</button>
           <button class="workspace-panel-tab" data-sidebar-panel="history">History</button>
           <button class="workspace-panel-tab" data-sidebar-panel="tools">Tools</button>
+          <button class="workspace-panel-tab" data-sidebar-panel="settings">Settings</button>
         </div>
 
         <section class="workspace-panel active" data-sidebar-panel-view="files">
@@ -198,13 +232,22 @@
             <button class="ghost-button compact" id="new-file-action">New File</button>
             <button class="ghost-button compact" id="new-folder-action">New Folder</button>
             <button class="ghost-button compact" id="rename-node-action">Rename</button>
+            <button class="ghost-button compact" id="duplicate-node-action">Duplicate</button>
             <button class="ghost-button compact" id="delete-node-action">Delete</button>
+            <button class="ghost-button compact" id="set-entry-action">Set Entry</button>
             <button class="ghost-button compact" id="upload-image-action">Upload Image</button>
           </div>
 
           <div class="tree-panel">
             <div id="file-tree"></div>
           </div>
+        </section>
+
+        <section class="workspace-panel" data-sidebar-panel-view="assets">
+          <div class="sidebar-panel-copy">
+            <p>Browse uploaded images and media, copy relative paths, and insert them into your current files.</p>
+          </div>
+          <div class="assets-panel" id="assets-panel"></div>
         </section>
 
         <section class="workspace-panel" data-sidebar-panel-view="outline">
@@ -264,6 +307,56 @@
                 <strong>Activity</strong>
               </div>
               <div class="activity-panel" id="activity-panel"></div>
+            </div>
+            <div class="tools-block">
+              <div class="tools-block-header">
+                <strong>Recent Files</strong>
+              </div>
+              <div class="recent-files-panel" id="recent-files-panel"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="workspace-panel" data-sidebar-panel-view="settings">
+          <div class="sidebar-panel-copy">
+            <p>Control project metadata, the entry file, and default compile settings from one place.</p>
+          </div>
+          <div class="settings-panel">
+            <label class="field compact-field">
+              <span>Project Name</span>
+              <input type="text" id="project-name-input" maxlength="120">
+            </label>
+            <label class="field compact-field">
+              <span>Entry File</span>
+              <select id="entry-file-select"></select>
+            </label>
+            <label class="field compact-field">
+              <span>Default Mode</span>
+              <select id="settings-compile-mode">
+                <option value="freestyle">Freestyle</option>
+                <option value="paged">Paged</option>
+                <option value="app">App</option>
+              </select>
+            </label>
+            <label class="field compact-field">
+              <span>Default Page Size</span>
+              <select id="settings-page-size">
+                <option value="A4">A4</option>
+                <option value="A3">A3</option>
+                <option value="Letter">Letter</option>
+                <option value="Legal">Legal</option>
+                <option value="Tabloid">Tabloid</option>
+              </select>
+            </label>
+            <label class="field compact-field">
+              <span>Default Orientation</span>
+              <select id="settings-page-orientation">
+                <option value="portrait">Portrait</option>
+                <option value="landscape">Landscape</option>
+              </select>
+            </label>
+            <div class="settings-actions">
+              <button class="primary-button full-width" id="apply-settings-button">Apply Settings</button>
             </div>
           </div>
         </section>

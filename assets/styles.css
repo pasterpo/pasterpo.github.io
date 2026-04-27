@@ -248,6 +248,10 @@ button {
   box-shadow: var(--shadow);
 }
 
+.hero-panel.hidden {
+  display: none;
+}
+
 .hero-copy-block {
   display: flex;
   flex-direction: column;
@@ -359,6 +363,10 @@ button {
   display: block;
 }
 
+#route-projects.active {
+  margin-top: 18px;
+}
+
 .section-header {
   display: flex;
   align-items: flex-end;
@@ -376,6 +384,11 @@ button {
 
 .dashboard-main {
   min-width: 0;
+}
+
+.dashboard-sidecard {
+  position: sticky;
+  top: 22px;
 }
 
 .dashboard-sidecard h3 {
@@ -413,6 +426,78 @@ button {
   flex: 0 0 auto;
 }
 
+.dashboard-side-block {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(97, 112, 127, 0.16);
+}
+
+.dashboard-side-block h4 {
+  margin: 0;
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+}
+
+.dashboard-quickstart {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.dashboard-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.dashboard-recent {
+  margin-top: 12px;
+}
+
+.recent-project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recent-project-item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 12px 13px;
+}
+
+.recent-project-item strong,
+.recent-file-item strong {
+  display: block;
+  font-size: 0.93rem;
+}
+
+.recent-project-item small,
+.recent-file-item small,
+.asset-card small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.79rem;
+  line-height: 1.45;
+}
+
+.dashboard-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.dashboard-field {
+  margin-top: 0;
+}
+
 .section-header h2 {
   font-size: clamp(1.6rem, 2.2vw, 2.2rem);
 }
@@ -444,7 +529,7 @@ button {
 }
 
 .projects-grid {
-  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
 .project-card {
@@ -504,6 +589,7 @@ button {
 .project-card-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .users-panel {
@@ -596,7 +682,7 @@ button {
 
 .workspace-panel-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   padding: 12px 14px 10px;
   border-bottom: 1px solid var(--border);
@@ -647,9 +733,76 @@ button {
   margin-top: 0;
 }
 
-.compact-field input {
+.compact-field input,
+.compact-field select {
   padding: 10px 12px;
   font-size: 0.92rem;
+}
+
+.assets-panel,
+.recent-files-panel,
+.settings-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+}
+
+.asset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 12px;
+}
+
+.asset-card {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+  padding: 12px;
+}
+
+.asset-card img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgba(97, 112, 127, 0.12);
+  background: #f3f6f8;
+}
+
+.asset-card strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 0.92rem;
+}
+
+.asset-actions,
+.settings-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.recent-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recent-file-item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 12px 13px;
+}
+
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .tree-toolbar {
@@ -1308,6 +1461,14 @@ button {
 
   .dashboard-grid {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-sidecard {
+    position: static;
   }
 
   .hero-summary {
