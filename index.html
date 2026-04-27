@@ -204,15 +204,15 @@
             <div class="tool-editor-grid">
               <label class="tool-pane">
                 <span>HTML</span>
-                <textarea id="tool-html-input" spellcheck="false" placeholder="Paste or write HTML here."></textarea>
+                <textarea id="tool-html-input" wrap="off" spellcheck="false" placeholder="Paste or write HTML here."></textarea>
               </label>
               <label class="tool-pane">
                 <span>CSS</span>
-                <textarea id="tool-css-input" spellcheck="false" placeholder="Optional CSS for styling."></textarea>
+                <textarea id="tool-css-input" wrap="off" spellcheck="false" placeholder="Optional CSS for styling."></textarea>
               </label>
               <label class="tool-pane">
                 <span>JavaScript</span>
-                <textarea id="tool-js-input" spellcheck="false" placeholder="Optional JavaScript for app mode interactions."></textarea>
+                <textarea id="tool-js-input" wrap="off" spellcheck="false" placeholder="Optional JavaScript for app mode interactions."></textarea>
               </label>
             </div>
           </section>
@@ -302,7 +302,7 @@
                   <button class="ghost-button compact" id="diff-left-clear-button">Clear</button>
                 </div>
               </div>
-              <textarea id="diff-left-input" spellcheck="false" placeholder="Paste the original version here."></textarea>
+              <textarea id="diff-left-input" wrap="off" spellcheck="false" placeholder="Paste the original version here."></textarea>
             </div>
             <div class="diff-pane">
               <div class="diff-pane-header">
@@ -312,7 +312,7 @@
                   <button class="ghost-button compact" id="diff-right-clear-button">Clear</button>
                 </div>
               </div>
-              <textarea id="diff-right-input" spellcheck="false" placeholder="Paste the revised version here."></textarea>
+              <textarea id="diff-right-input" wrap="off" spellcheck="false" placeholder="Paste the revised version here."></textarea>
             </div>
           </div>
           <div class="diff-summary" id="diff-summary"></div>
@@ -551,7 +551,15 @@
           </div>
           <div class="editor-badges" id="editor-badges"></div>
         </div>
-        <textarea id="editor"></textarea>
+        <div class="editor-surface">
+          <div class="editor-surface-header">
+            <strong>Code Editor</strong>
+            <span>Vertical and horizontal scrolling stay inside the editor surface.</span>
+          </div>
+          <div class="editor-surface-body">
+            <textarea id="editor"></textarea>
+          </div>
+        </div>
       </section>
 
       <div class="workspace-resizer" id="workspace-resizer" aria-hidden="true"></div>

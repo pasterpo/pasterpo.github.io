@@ -34,6 +34,35 @@ body {
   font-family: "IBM Plex Sans", system-ui, sans-serif;
 }
 
+html {
+  scrollbar-gutter: stable both-edges;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(97, 112, 127, 0.55) rgba(97, 112, 127, 0.12);
+}
+
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(97, 112, 127, 0.1);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(97, 112, 127, 0.5);
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(70, 85, 99, 0.7);
+}
+
 body {
   overflow: hidden;
 }
@@ -230,6 +259,7 @@ button {
   flex: 1;
   overflow: auto;
   padding: 24px 20px 34px;
+  scrollbar-gutter: stable both-edges;
 }
 
 .hero-panel,
@@ -701,6 +731,9 @@ button {
   font-family: "IBM Plex Mono", Consolas, monospace;
   font-size: 0.88rem;
   line-height: 1.6;
+  white-space: pre;
+  overflow: auto;
+  scrollbar-gutter: stable both-edges;
 }
 
 .tool-preview-header,
@@ -742,8 +775,9 @@ button {
   margin-top: 16px;
   border: 1px solid var(--border);
   border-radius: 18px;
-  overflow: hidden;
+  overflow: auto;
   background: #edf2f5;
+  scrollbar-gutter: stable both-edges;
 }
 
 .tool-preview-frame-wrap {
@@ -854,6 +888,8 @@ button {
   flex-direction: column;
   gap: 12px;
   margin-top: 18px;
+  overflow: auto;
+  scrollbar-gutter: stable both-edges;
 }
 
 .diff-block {
@@ -914,8 +950,10 @@ button {
   font-family: "IBM Plex Mono", Consolas, monospace;
   font-size: 0.84rem;
   line-height: 1.65;
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre;
+  word-break: normal;
+  overflow: auto;
+  scrollbar-gutter: stable both-edges;
 }
 
 .diff-code-add {
@@ -1092,6 +1130,7 @@ button {
   min-height: 0;
   overflow: auto;
   padding: 12px;
+  scrollbar-gutter: stable both-edges;
 }
 
 .asset-grid {
@@ -1165,6 +1204,7 @@ button {
   min-height: 0;
   overflow: auto;
   padding: 8px 10px 12px;
+  scrollbar-gutter: stable both-edges;
 }
 
 .sidebar-footnote {
@@ -1188,6 +1228,7 @@ button {
   min-height: 0;
   overflow: auto;
   padding: 12px;
+  scrollbar-gutter: stable both-edges;
 }
 
 .comments-panel,
@@ -1395,6 +1436,7 @@ button {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  background: #f3f6f8;
 }
 
 .editor-header {
@@ -1421,6 +1463,7 @@ button {
   gap: 8px;
   overflow: auto;
   padding-bottom: 2px;
+  scrollbar-gutter: stable;
 }
 
 .tab-chip {
@@ -1465,6 +1508,47 @@ button {
   flex-wrap: wrap;
 }
 
+.editor-surface {
+  flex: 1;
+  min-height: 0;
+  margin: 16px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 14px 28px rgba(20, 31, 41, 0.06);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.editor-surface-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: #fbfcfd;
+}
+
+.editor-surface-header strong {
+  font-size: 0.9rem;
+}
+
+.editor-surface-header span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: right;
+}
+
+.editor-surface-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+  background: #ffffff;
+}
+
 .CodeMirror {
   flex: 1;
   height: 100%;
@@ -1474,12 +1558,17 @@ button {
   font-size: 14px;
   line-height: 1.6;
   overflow: hidden;
-  border-top: 1px solid var(--border);
+  border-top: 0;
+}
+
+.editor-surface-body .CodeMirror {
+  height: 100%;
 }
 
 .CodeMirror-scroll {
   overflow: auto !important;
   min-height: 0;
+  scrollbar-gutter: stable both-edges;
 }
 
 .CodeMirror-lines,
@@ -1574,6 +1663,8 @@ button {
   min-height: 0;
   position: relative;
   padding: 22px;
+  overflow: auto;
+  scrollbar-gutter: stable both-edges;
   background:
     linear-gradient(180deg, rgba(240, 243, 246, 0.96), rgba(240, 243, 246, 0.96)),
     radial-gradient(circle at top left, rgba(15, 108, 91, 0.05), transparent 34%);
@@ -1834,6 +1925,15 @@ button {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .editor-surface-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .editor-surface-header span {
+    text-align: left;
+  }
+
   .hero-summary {
     width: 100%;
   }
@@ -1885,5 +1985,9 @@ button {
 
   .diff-summary {
     grid-template-columns: 1fr;
+  }
+
+  .editor-surface {
+    margin: 12px;
   }
 }
