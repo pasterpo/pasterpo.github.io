@@ -51,17 +51,38 @@
 
     <main class="landing-shell" id="landing-view">
       <section class="hero-panel">
-        <div>
+        <div class="hero-copy-block">
           <p class="eyebrow">Quarterfinal upgrade</p>
           <h1>Write HTML like a paper, ship it like an app.</h1>
           <p class="hero-copy">
             HTMLLeaf now centers project work, multi-file editing, GitHub import, PDF workflows,
             and a sandboxed app preview in one restrained workspace.
           </p>
+          <div class="hero-actions">
+            <button class="primary-button" id="hero-open-workspace">Open Workspace</button>
+            <button class="ghost-button" id="hero-import-repo">Import GitHub Repo</button>
+          </div>
         </div>
-        <div class="hero-actions">
-          <button class="primary-button" id="hero-open-workspace">Open Workspace</button>
-          <button class="ghost-button" id="hero-import-repo">Import GitHub Repo</button>
+        <div class="hero-summary">
+          <div class="hero-summary-card">
+            <span class="hero-summary-label">Workspace shape</span>
+            <strong>Projects, files, editor, preview</strong>
+            <p>One calm surface for multi-file authoring, structured compile modes, and project-level tools.</p>
+          </div>
+          <div class="hero-summary-metrics">
+            <div class="hero-metric">
+              <span>Modes</span>
+              <strong>3</strong>
+            </div>
+            <div class="hero-metric">
+              <span>File Types</span>
+              <strong>10+</strong>
+            </div>
+            <div class="hero-metric">
+              <span>Preview</span>
+              <strong>Live</strong>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -76,12 +97,27 @@
             <button class="primary-button" id="new-project-button">New Project</button>
           </div>
         </div>
-        <div class="auth-gate" id="landing-auth-gate">
-          <h3>Sign in to unlock synced projects and compile gating.</h3>
-          <p>Logged-in projects render in this central grid instead of the old left-edge rail, keeping the landing flow clean and workspace-specific.</p>
-          <button class="primary-button" id="landing-auth-button">Continue with Email</button>
+        <div class="dashboard-grid">
+          <aside class="dashboard-sidecard">
+            <p class="eyebrow">Workspace Flow</p>
+            <h3>Structured like an editor, not a template gallery.</h3>
+            <p>Projects stay centered here, then open into a dedicated authoring shell with files, comments, history, and preview controls.</p>
+            <div class="dashboard-checklist">
+              <span>Multi-file project tree</span>
+              <span>Freestyle, Paged, and App preview</span>
+              <span>GitHub import and asset upload</span>
+              <span>Comments, history, and command palette</span>
+            </div>
+          </aside>
+          <div class="dashboard-main">
+            <div class="auth-gate" id="landing-auth-gate">
+              <h3>Sign in to unlock synced projects and compile gating.</h3>
+              <p>Logged-in projects render in this central grid instead of the old left-edge rail, keeping the landing flow clean and workspace-specific.</p>
+              <button class="primary-button" id="landing-auth-button">Continue with Email</button>
+            </div>
+            <div class="projects-grid" id="projects-grid"></div>
+          </div>
         </div>
-        <div class="projects-grid" id="projects-grid"></div>
       </section>
 
       <section class="route-panel" id="route-founders">
@@ -103,6 +139,10 @@
           <article class="info-card">
             <h3>What HTMLLeaf is building</h3>
             <p>HTMLLeaf is growing into a focused browser workspace for structured HTML projects, with calmer design, multi-file editing, and practical compile modes.</p>
+          </article>
+          <article class="info-card">
+            <h3>Product Direction</h3>
+            <p>The goal is a cleaner, more editor-first HTML workspace that borrows strong structural ideas from tools like Overleaf without dragging in irrelevant marketing surfaces.</p>
           </article>
         </div>
       </section>
