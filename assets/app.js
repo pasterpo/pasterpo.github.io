@@ -2,6 +2,7 @@ const SUPABASE_URL = "https://nutdsgzbjgvmipngxohx.supabase.co";
 const SUPABASE_ANON = "sb_publishable_zbTO3ascamLZ2SOPorktlA_fcTUiFYo";
 const LOCAL_PROJECTS_KEY = "htmlleaf-local-projects-v2";
 const LOCAL_LAST_PROJECT_KEY = "htmlleaf-last-project-id";
+const LOCAL_TOOL_DRAFT_KEY = "htmlleaf-tool-draft-v1";
 const GITHUB_API_ROOT = "https://api.github.com";
 const DEMO_LIMIT = 25;
 const PAGE_SIZES = {
@@ -59,6 +60,10 @@ const PROJECT_PRESET_META = {
     defaultName: "Docs Site"
   }
 };
+const PRODUCT_DATA = window.HTMLLEAF_PRODUCT_DATA || {};
+const TOOL_EXAMPLE = PRODUCT_DATA.toolExample || { html: "", css: "", js: "" };
+const DIFF_EXAMPLE = PRODUCT_DATA.diffExample || { left: "", right: "" };
+const TEMPLATE_LIBRARY = Array.isArray(PRODUCT_DATA.templateLibrary) ? PRODUCT_DATA.templateLibrary : [];
 const SIDEBAR_PANEL_LABELS = {
   files: "Files",
   assets: "Assets",
@@ -251,6 +256,48 @@ const elements = {
   projectsGrid: document.getElementById("projects-grid"),
   projectSearchInput: document.getElementById("project-search-input"),
   projectSortSelect: document.getElementById("project-sort-select"),
+  toolModeSelect: document.getElementById("tool-mode-select"),
+  toolPageSize: document.getElementById("tool-page-size"),
+  toolPageOrientation: document.getElementById("tool-page-orientation"),
+  toolPageSizeWrap: document.getElementById("tool-page-size-wrap"),
+  toolPageOrientationWrap: document.getElementById("tool-page-orientation-wrap"),
+  toolHtmlInput: document.getElementById("tool-html-input"),
+  toolCssInput: document.getElementById("tool-css-input"),
+  toolJsInput: document.getElementById("tool-js-input"),
+  toolStatus: document.getElementById("tool-status"),
+  toolDetail: document.getElementById("tool-detail"),
+  toolStats: document.getElementById("tool-stats"),
+  toolPreviewFrame: document.getElementById("tool-preview-frame"),
+  toolRunButton: document.getElementById("tool-run-button"),
+  toolLoadExampleButton: document.getElementById("tool-load-example"),
+  toolClearButton: document.getElementById("tool-clear-button"),
+  toolOpenWorkspaceButton: document.getElementById("tool-open-workspace-button"),
+  toolDownloadHtmlButton: document.getElementById("tool-download-html-button"),
+  toolDownloadPdfButton: document.getElementById("tool-download-pdf-button"),
+  toolImportHtmlButton: document.getElementById("tool-import-html-button"),
+  toolHtmlFileInput: document.getElementById("tool-html-file-input"),
+  templateSearchInput: document.getElementById("template-search-input"),
+  templateCategorySelect: document.getElementById("template-category-select"),
+  templatesGrid: document.getElementById("templates-grid"),
+  templatePreviewTitle: document.getElementById("template-preview-title"),
+  templatePreviewMeta: document.getElementById("template-preview-meta"),
+  templatePreviewNotes: document.getElementById("template-preview-notes"),
+  templatePreviewFrame: document.getElementById("template-preview-frame"),
+  templateUseButton: document.getElementById("template-use-button"),
+  diffLeftInput: document.getElementById("diff-left-input"),
+  diffRightInput: document.getElementById("diff-right-input"),
+  diffSummary: document.getElementById("diff-summary"),
+  diffResults: document.getElementById("diff-results"),
+  diffCompareButton: document.getElementById("diff-compare-button"),
+  diffSwapButton: document.getElementById("diff-swap-button"),
+  diffLoadExampleButton: document.getElementById("diff-load-example-button"),
+  diffCopySummaryButton: document.getElementById("diff-copy-summary-button"),
+  diffLeftUploadButton: document.getElementById("diff-left-upload-button"),
+  diffRightUploadButton: document.getElementById("diff-right-upload-button"),
+  diffLeftClearButton: document.getElementById("diff-left-clear-button"),
+  diffRightClearButton: document.getElementById("diff-right-clear-button"),
+  diffLeftFileInput: document.getElementById("diff-left-file-input"),
+  diffRightFileInput: document.getElementById("diff-right-file-input"),
   landingAuthGate: document.getElementById("landing-auth-gate"),
   compileMode: document.getElementById("compile-mode"),
   pageSize: document.getElementById("page-size"),
@@ -327,7 +374,8 @@ const elements = {
   commandPaletteModal: document.getElementById("command-palette-modal"),
   commandPaletteInput: document.getElementById("command-palette-input"),
   commandPaletteResults: document.getElementById("command-palette-results"),
-  imageUploadInput: document.getElementById("image-upload-input")
+  imageUploadInput: document.getElementById("image-upload-input"),
+  heroOpenTools: document.getElementById("hero-open-tools")
 };
 
 const state = {
@@ -351,7 +399,11 @@ const state = {
   treeFilter: "",
   projectSearchQuery: "",
   projectSort: "recent",
+  templateSearchQuery: "",
+  templateCategory: "all",
+  selectedTemplateId: TEMPLATE_LIBRARY[0]?.id || "",
   workspaceSearchQuery: "",
+  diffSummaryText: "",
   previewZoom: 1,
   editorPaneWidth: null,
   objectUrls: new Set(),
@@ -908,6 +960,672 @@ function setEmptyPanel(target, message) {
 function countWords(value) {
   const parts = value.trim().split(/\s+/).filter(Boolean);
   return parts.length;
+}
+
+function getTemplateById(templateId) {
+  return TEMPLATE_LIBRARY.find((template) => template.id === templateId) || null;
+}
+
+function defaultToolDraft() {
+  return {
+    html: TOOL_EXAMPLE.html || "",
+    css: TOOL_EXAMPLE.css || "",
+    js: TOOL_EXAMPLE.js || "",
+    mode: "freestyle",
+    pageSize: "A4",
+    pageOrientation: "portrait"
+  };
+}
+
+function persistToolDraft() {
+  const payload = {
+    html: elements.toolHtmlInput.value,
+    css: elements.toolCssInput.value,
+    js: elements.toolJsInput.value,
+    mode: elements.toolModeSelect.value,
+    pageSize: elements.toolPageSize.value,
+    pageOrientation: elements.toolPageOrientation.value
+  };
+  localStorage.setItem(LOCAL_TOOL_DRAFT_KEY, JSON.stringify(payload));
+}
+
+function loadToolDraft() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(LOCAL_TOOL_DRAFT_KEY) || "null");
+    return parsed && typeof parsed === "object" ? { ...defaultToolDraft(), ...parsed } : defaultToolDraft();
+  } catch {
+    return defaultToolDraft();
+  }
+}
+
+function ensureStandaloneDocument(htmlSource) {
+  const source = (htmlSource || "").trim();
+  if (!source) {
+    return [
+      "<!DOCTYPE html>",
+      "<html lang=\"en\">",
+      "<head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>HTMLLeaf Tool</title></head>",
+      "<body></body>",
+      "</html>"
+    ].join("");
+  }
+  if (/<html[\s>]/i.test(source)) return source;
+  return [
+    "<!DOCTYPE html>",
+    "<html lang=\"en\">",
+    "<head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>HTMLLeaf Tool</title></head>",
+    `<body>${source}</body>`,
+    "</html>"
+  ].join("");
+}
+
+function injectInlineDocumentParts(htmlSource, cssText = "", jsText = "") {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(ensureStandaloneDocument(htmlSource), "text/html");
+  if (!doc.head) {
+    const head = doc.createElement("head");
+    doc.documentElement.insertBefore(head, doc.body || null);
+  }
+  if (cssText.trim()) {
+    const style = doc.createElement("style");
+    style.textContent = cssText;
+    doc.head.appendChild(style);
+  }
+  if (jsText.trim()) {
+    const script = doc.createElement("script");
+    script.textContent = jsText;
+    doc.body.appendChild(script);
+  }
+  return doc;
+}
+
+function applyPagedStylesToDoc(doc, pageSize, orientation) {
+  const page = PAGE_SIZES[pageSize] || PAGE_SIZES.A4;
+  const widthMm = orientation === "portrait" ? page.widthMm : page.heightMm;
+  const heightMm = orientation === "portrait" ? page.heightMm : page.widthMm;
+  const style = doc.createElement("style");
+  style.textContent = [
+    `@page { size: ${pageSize} ${orientation}; margin: 0; }`,
+    "html { background: #e8ebef; }",
+    `body { max-width: ${widthMm}mm; min-height: ${heightMm}mm; margin: 18px auto !important; background: #ffffff; box-shadow: 0 0 0 1px rgba(23,33,43,0.08); }`
+  ].join("\n");
+  doc.head.appendChild(style);
+}
+
+function buildStandaloneDocument({ html, css = "", js = "", mode = "freestyle", pageSize = "A4", pageOrientation = "portrait" }) {
+  const doc = injectInlineDocumentParts(html, css, js);
+  if (mode === "paged") {
+    applyPagedStylesToDoc(doc, pageSize, pageOrientation);
+  }
+  return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
+}
+
+function setToolStatus(status, detail, kind = "idle") {
+  elements.toolStatus.textContent = status;
+  elements.toolDetail.textContent = detail;
+  elements.toolStatus.dataset.kind = kind;
+}
+
+function syncToolModeControls() {
+  const isPaged = elements.toolModeSelect.value === "paged";
+  const isApp = elements.toolModeSelect.value === "app";
+  elements.toolPageSizeWrap.classList.toggle("hidden", !isPaged);
+  elements.toolPageOrientationWrap.classList.toggle("hidden", !isPaged);
+  elements.toolDownloadPdfButton.disabled = isApp;
+}
+
+function computeToolStats(html, css, js) {
+  const source = `${html}\n${css}\n${js}`;
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(ensureStandaloneDocument(html), "text/html");
+  return [
+    `${source ? source.split("\n").length : 0} lines`,
+    `${countWords(source || "")} words`,
+    `${doc.querySelectorAll("section,article,main").length} sections`,
+    `${doc.querySelectorAll("a").length} links`,
+    `${doc.querySelectorAll("img").length} images`
+  ];
+}
+
+function renderToolStats() {
+  const stats = computeToolStats(elements.toolHtmlInput.value, elements.toolCssInput.value, elements.toolJsInput.value);
+  elements.toolStats.innerHTML = stats.map((item) => `<span class="project-metric">${escapeHtml(item)}</span>`).join("");
+}
+
+function populateToolWorkbench(draft) {
+  elements.toolHtmlInput.value = draft.html || "";
+  elements.toolCssInput.value = draft.css || "";
+  elements.toolJsInput.value = draft.js || "";
+  elements.toolModeSelect.value = draft.mode || "freestyle";
+  elements.toolPageSize.value = draft.pageSize || "A4";
+  elements.toolPageOrientation.value = draft.pageOrientation || "portrait";
+  syncToolModeControls();
+  renderToolStats();
+}
+
+function loadToolExample() {
+  populateToolWorkbench(defaultToolDraft());
+  persistToolDraft();
+  runToolWorkbench();
+}
+
+function clearToolWorkbench() {
+  populateToolWorkbench({ html: "", css: "", js: "", mode: "freestyle", pageSize: "A4", pageOrientation: "portrait" });
+  persistToolDraft();
+  elements.toolPreviewFrame.srcdoc = "";
+  setToolStatus("Cleared", "Tool inputs were cleared. Paste fresh HTML to continue.", "ok");
+}
+
+function toolProjectName() {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(ensureStandaloneDocument(elements.toolHtmlInput.value), "text/html");
+  const title = doc.querySelector("title")?.textContent?.trim();
+  return title || "Tool Draft";
+}
+
+async function runToolWorkbench() {
+  const html = elements.toolHtmlInput.value;
+  const css = elements.toolCssInput.value;
+  const js = elements.toolJsInput.value;
+  const mode = elements.toolModeSelect.value;
+  const pageSize = elements.toolPageSize.value;
+  const pageOrientation = elements.toolPageOrientation.value;
+  if (!html.trim()) {
+    setToolStatus("Missing HTML", "Add some HTML to preview and export from the public tools suite.", "error");
+    return;
+  }
+  const compiledHtml = buildStandaloneDocument({ html, css, js, mode, pageSize, pageOrientation });
+  const frame = elements.toolPreviewFrame;
+  frame.onload = async () => {
+    await waitForFrameAssets(frame);
+    setToolStatus("Ready", mode === "app" ? "App preview is live and interactive." : "Document preview rendered successfully.", "ok");
+  };
+  frame.srcdoc = compiledHtml;
+  renderToolStats();
+  persistToolDraft();
+  setToolStatus("Rendering", "Preparing preview from the current tool inputs.", "working");
+}
+
+function downloadTextFile(fileName, content, type = "text/plain;charset=utf-8") {
+  const blob = new Blob([content], { type });
+  const anchor = document.createElement("a");
+  anchor.href = URL.createObjectURL(blob);
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  setTimeout(() => URL.revokeObjectURL(anchor.href), 2000);
+}
+
+function downloadToolHtml() {
+  const html = buildStandaloneDocument({
+    html: elements.toolHtmlInput.value,
+    css: elements.toolCssInput.value,
+    js: elements.toolJsInput.value,
+    mode: elements.toolModeSelect.value,
+    pageSize: elements.toolPageSize.value,
+    pageOrientation: elements.toolPageOrientation.value
+  });
+  const safeName = toolProjectName().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "htmlleaf-tool";
+  downloadTextFile(`${safeName}.html`, html, "text/html;charset=utf-8");
+  setToolStatus("Downloaded", `${safeName}.html was saved from the public tool workbench.`, "ok");
+}
+
+function downloadToolPdf() {
+  if (elements.toolModeSelect.value === "app") {
+    setToolStatus("PDF blocked", "App mode is interactive preview only. Switch to Freestyle or Paged for PDF export.", "error");
+    return;
+  }
+  const iframeDoc = elements.toolPreviewFrame.contentDocument || elements.toolPreviewFrame.contentWindow?.document;
+  if (!iframeDoc?.body) {
+    setToolStatus("Preview missing", "Run the tool first so a document exists for PDF export.", "error");
+    return;
+  }
+  const button = elements.toolDownloadPdfButton;
+  button.disabled = true;
+  button.textContent = "Generating...";
+  setToolStatus("Exporting", "Generating PDF from the tool preview.", "working");
+  try {
+    let styleMarkup = "";
+    iframeDoc.querySelectorAll("style,link[rel='stylesheet']").forEach((styleEl) => {
+      styleMarkup += styleEl.outerHTML;
+    });
+    elements.pdfRender.innerHTML = styleMarkup + iframeDoc.body.innerHTML;
+    const width = elements.pdfRender.scrollWidth;
+    const height = elements.pdfRender.scrollHeight;
+    elements.pdfRender.style.width = `${width}px`;
+    setTimeout(() => {
+      window.html2canvas(elements.pdfRender, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        width,
+        height,
+        windowWidth: width,
+        windowHeight: height,
+        scrollX: 0,
+        scrollY: 0,
+        logging: false
+      }).then((canvas) => {
+        elements.pdfRender.innerHTML = "";
+        elements.pdfRender.style.width = "";
+        const jsPDF = window.jspdf.jsPDF;
+        const pxToMm = 25.4 / 96;
+        const pdfWidth = width * pxToMm;
+        const pdfHeight = height * pxToMm;
+        const pdf = new jsPDF({
+          orientation: pdfWidth > pdfHeight ? "l" : "p",
+          unit: "mm",
+          format: [pdfWidth, pdfHeight]
+        });
+        pdf.addImage(canvas.toDataURL("image/jpeg", 0.97), "JPEG", 0, 0, pdfWidth, pdfHeight);
+        const safeName = toolProjectName().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "htmlleaf-tool";
+        pdf.save(`${safeName}.pdf`);
+        button.disabled = false;
+        button.textContent = "PDF";
+        setToolStatus("Downloaded", `${safeName}.pdf was generated from the tool preview.`, "ok");
+      }).catch((error) => {
+        elements.pdfRender.innerHTML = "";
+        elements.pdfRender.style.width = "";
+        button.disabled = false;
+        button.textContent = "PDF";
+        setToolStatus("PDF error", error.message, "error");
+      });
+    }, 250);
+  } catch (error) {
+    elements.pdfRender.innerHTML = "";
+    elements.pdfRender.style.width = "";
+    button.disabled = false;
+    button.textContent = "PDF";
+    setToolStatus("PDF error", error.message, "error");
+  }
+}
+
+async function openToolInWorkspace() {
+  if (state.backendReachable && !state.currentUser && !requireAuth("Sign in to turn this tool draft into a synced project.")) return;
+  const project = createStarterProject(toolProjectName());
+  const filesByName = Object.fromEntries(project.nodes.filter((node) => node.type === "file").map((node) => [node.name, node]));
+  filesByName["index.html"].content = elements.toolHtmlInput.value || TOOL_EXAMPLE.html;
+  filesByName["styles.css"].content = elements.toolCssInput.value || "";
+  filesByName["script.js"].content = elements.toolJsInput.value || "";
+  project.compileMode = elements.toolModeSelect.value;
+  project.pageSize = elements.toolPageSize.value;
+  project.pageOrientation = elements.toolPageOrientation.value;
+  project.activityLog.unshift(createActivityEntry("Created from tools", "A public tools draft was sent into the full workspace.", "system"));
+  await saveProjectRecord(project);
+  await loadProjects();
+  openWorkspace(project.id);
+}
+
+function buildTemplateProject(templateId, name = "") {
+  const template = getTemplateById(templateId);
+  if (!template) return createStarterProject(name || "Template Workspace");
+  const project = createStarterProject(name || template.title);
+  const filesByName = Object.fromEntries(project.nodes.filter((node) => node.type === "file").map((node) => [node.name, node]));
+  filesByName["index.html"].content = template.html;
+  filesByName["styles.css"].content = template.css;
+  filesByName["script.js"].content = template.js || "";
+  project.compileMode = template.mode || "freestyle";
+  project.pageSize = template.pageSize || "A4";
+  project.pageOrientation = template.pageOrientation || "portrait";
+  const rootId = defaultRoot(project)?.id || null;
+  if (rootId) {
+    project.nodes.push({
+      id: uuid(),
+      parentId: rootId,
+      type: "file",
+      name: "README.md",
+      mime: "text/markdown",
+      content: [
+        `# ${template.title}`,
+        "",
+        template.summary,
+        "",
+        "## Notes",
+        ...(template.notes || []).map((note) => `- ${note}`)
+      ].join("\n")
+    });
+  }
+  project.activityLog.unshift(createActivityEntry("Template loaded", `${template.title} opened as a structured starter.`, "system"));
+  return project;
+}
+
+function renderTemplateCategoryOptions() {
+  const categories = ["all", ...new Set(TEMPLATE_LIBRARY.map((template) => template.category).filter(Boolean))];
+  elements.templateCategorySelect.innerHTML = categories.map((category) => {
+    const label = category === "all" ? "All Categories" : category;
+    return `<option value="${escapeHtml(category)}">${escapeHtml(label)}</option>`;
+  }).join("");
+  elements.templateCategorySelect.value = state.templateCategory;
+}
+
+function filteredTemplates() {
+  const search = state.templateSearchQuery.trim().toLowerCase();
+  return TEMPLATE_LIBRARY.filter((template) => {
+    const categoryMatch = state.templateCategory === "all" || template.category === state.templateCategory;
+    if (!categoryMatch) return false;
+    if (!search) return true;
+    const haystack = `${template.title} ${template.category} ${template.summary} ${(template.tags || []).join(" ")}`.toLowerCase();
+    return haystack.includes(search);
+  });
+}
+
+function renderTemplatePreview(templateId) {
+  const template = getTemplateById(templateId);
+  if (!template) {
+    elements.templatePreviewTitle.textContent = "Choose a template";
+    elements.templatePreviewMeta.textContent = "Pick any template to inspect its structure and create a project from it.";
+    elements.templatePreviewNotes.innerHTML = "";
+    elements.templatePreviewFrame.srcdoc = "";
+    return;
+  }
+  elements.templatePreviewTitle.textContent = template.title;
+  elements.templatePreviewMeta.textContent = `${template.category} | ${(template.tags || []).join(" | ")} | ${template.mode}`;
+  elements.templatePreviewNotes.innerHTML = (template.notes || []).map((note) => `<p>${escapeHtml(note)}</p>`).join("");
+  elements.templatePreviewFrame.srcdoc = buildStandaloneDocument({
+    html: template.html,
+    css: template.css,
+    js: template.js || "",
+    mode: template.mode || "freestyle",
+    pageSize: template.pageSize || "A4",
+    pageOrientation: template.pageOrientation || "portrait"
+  });
+  elements.templateUseButton.dataset.templateId = template.id;
+}
+
+function renderTemplateGallery() {
+  renderTemplateCategoryOptions();
+  const templates = filteredTemplates();
+  if (!templates.length) {
+    elements.templatesGrid.innerHTML = "<article class=\"template-card\"><h3>No templates found</h3><p>Try a different keyword or switch back to all categories.</p></article>";
+    renderTemplatePreview("");
+    return;
+  }
+  if (!templates.some((template) => template.id === state.selectedTemplateId)) state.selectedTemplateId = templates[0].id;
+  elements.templatesGrid.innerHTML = templates.map((template) => [
+    `<article class="template-card${template.id === state.selectedTemplateId ? " active" : ""}" data-template-card="${template.id}">`,
+    `  <p class="eyebrow">${escapeHtml(template.category)}</p>`,
+    `  <h3>${escapeHtml(template.title)}</h3>`,
+    `  <p>${escapeHtml(template.summary)}</p>`,
+    `  <div class="template-tags">${(template.tags || []).map((tag) => `<span class="project-metric">${escapeHtml(tag)}</span>`).join("")}</div>`,
+    `  <div class="template-card-footer"><span>${escapeHtml(template.mode)}</span><button class="ghost-button compact" type="button" data-template-open="${template.id}">Preview</button></div>`,
+    "</article>"
+  ].join("")).join("");
+  qsa("[data-template-card]").forEach((card) => {
+    card.addEventListener("click", () => {
+      state.selectedTemplateId = card.dataset.templateCard;
+      renderTemplateGallery();
+      renderTemplatePreview(state.selectedTemplateId);
+    });
+  });
+  qsa("[data-template-open]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      state.selectedTemplateId = button.dataset.templateOpen;
+      renderTemplateGallery();
+      renderTemplatePreview(state.selectedTemplateId);
+    });
+  });
+  renderTemplatePreview(state.selectedTemplateId || templates[0].id);
+}
+
+async function useSelectedTemplate() {
+  const template = getTemplateById(elements.templateUseButton.dataset.templateId || state.selectedTemplateId);
+  if (!template) return;
+  if (state.backendReachable && !state.currentUser && !requireAuth("Sign in to create a project from this template.")) return;
+  const name = await promptForValue({
+    label: "Project",
+    title: "Use template",
+    copy: template.summary,
+    value: template.title,
+    confirmLabel: "Create project"
+  });
+  if (!name) return;
+  const project = buildTemplateProject(template.id, name.trim());
+  await saveProjectRecord(project);
+  await loadProjects();
+  openWorkspace(project.id);
+}
+
+function tokenizeDiffText(value) {
+  return value.split(/(\s+|[^\w\s])/g).filter((token) => token !== "");
+}
+
+function buildLcsMatrix(left, right) {
+  const table = Array.from({ length: left.length + 1 }, () => Array(right.length + 1).fill(0));
+  for (let i = left.length - 1; i >= 0; i -= 1) {
+    for (let j = right.length - 1; j >= 0; j -= 1) {
+      table[i][j] = left[i] === right[j] ? table[i + 1][j + 1] + 1 : Math.max(table[i + 1][j], table[i][j + 1]);
+    }
+  }
+  return table;
+}
+
+function buildTokenMarkup(leftText, rightText, side) {
+  const leftTokens = tokenizeDiffText(leftText);
+  const rightTokens = tokenizeDiffText(rightText);
+  const table = buildLcsMatrix(leftTokens, rightTokens);
+  const pieces = [];
+  let i = 0;
+  let j = 0;
+  while (i < leftTokens.length && j < rightTokens.length) {
+    if (leftTokens[i] === rightTokens[j]) {
+      pieces.push({ type: "same", value: leftTokens[i] });
+      i += 1;
+      j += 1;
+    } else if (table[i + 1][j] >= table[i][j + 1]) {
+      if (side === "left") pieces.push({ type: "remove", value: leftTokens[i] });
+      i += 1;
+    } else {
+      if (side === "right") pieces.push({ type: "add", value: rightTokens[j] });
+      j += 1;
+    }
+  }
+  while (i < leftTokens.length) {
+    if (side === "left") pieces.push({ type: "remove", value: leftTokens[i] });
+    i += 1;
+  }
+  while (j < rightTokens.length) {
+    if (side === "right") pieces.push({ type: "add", value: rightTokens[j] });
+    j += 1;
+  }
+  return pieces.map((piece) => {
+    const className = piece.type === "same" ? "diff-token-same" : piece.type === "add" ? "diff-token-add" : "diff-token-remove";
+    return `<span class="${className}">${escapeHtml(piece.value)}</span>`;
+  }).join("");
+}
+
+function computeLineDiff(leftText, rightText) {
+  const leftLines = leftText ? leftText.replace(/\r/g, "").split("\n") : [];
+  const rightLines = rightText ? rightText.replace(/\r/g, "").split("\n") : [];
+  const tooLarge = leftLines.length * rightLines.length > 120000;
+  const maxLines = tooLarge ? 220 : Math.max(leftLines.length, rightLines.length);
+  const left = leftLines.slice(0, maxLines);
+  const right = rightLines.slice(0, maxLines);
+  const table = buildLcsMatrix(left, right);
+  const operations = [];
+  let i = 0;
+  let j = 0;
+  while (i < left.length && j < right.length) {
+    if (left[i] === right[j]) {
+      operations.push({ type: "same", leftLine: i + 1, rightLine: j + 1, leftText: left[i], rightText: right[j] });
+      i += 1;
+      j += 1;
+    } else if (table[i + 1][j] >= table[i][j + 1]) {
+      operations.push({ type: "remove", leftLine: i + 1, rightLine: null, leftText: left[i], rightText: "" });
+      i += 1;
+    } else {
+      operations.push({ type: "add", leftLine: null, rightLine: j + 1, leftText: "", rightText: right[j] });
+      j += 1;
+    }
+  }
+  while (i < left.length) {
+    operations.push({ type: "remove", leftLine: i + 1, rightLine: null, leftText: left[i], rightText: "" });
+    i += 1;
+  }
+  while (j < right.length) {
+    operations.push({ type: "add", leftLine: null, rightLine: j + 1, leftText: "", rightText: right[j] });
+    j += 1;
+  }
+
+  const merged = [];
+  for (let index = 0; index < operations.length; index += 1) {
+    const current = operations[index];
+    const next = operations[index + 1];
+    if (current.type === "remove" && next?.type === "add") {
+      merged.push({
+        type: "change",
+        leftLine: current.leftLine,
+        rightLine: next.rightLine,
+        leftText: current.leftText,
+        rightText: next.rightText
+      });
+      index += 1;
+      continue;
+    }
+    if (current.type === "add" && next?.type === "remove") {
+      merged.push({
+        type: "change",
+        leftLine: next.leftLine,
+        rightLine: current.rightLine,
+        leftText: next.leftText,
+        rightText: current.rightText
+      });
+      index += 1;
+      continue;
+    }
+    merged.push(current);
+  }
+
+  return {
+    truncated: tooLarge || leftLines.length > maxLines || rightLines.length > maxLines,
+    items: merged
+  };
+}
+
+function renderDiffSummaryItems(items, truncated) {
+  const summary = {
+    same: items.filter((item) => item.type === "same").length,
+    add: items.filter((item) => item.type === "add").length,
+    remove: items.filter((item) => item.type === "remove").length,
+    change: items.filter((item) => item.type === "change").length
+  };
+  state.diffSummaryText = [
+    `Unchanged lines: ${summary.same}`,
+    `Added lines: ${summary.add}`,
+    `Removed lines: ${summary.remove}`,
+    `Changed lines: ${summary.change}`,
+    truncated ? "Comparison was truncated for performance." : "Full comparison completed."
+  ].join(" | ");
+  elements.diffSummary.innerHTML = [
+    `<article class="diff-summary-card"><strong>${summary.same}</strong><span>Unchanged</span></article>`,
+    `<article class="diff-summary-card"><strong>${summary.add}</strong><span>Added</span></article>`,
+    `<article class="diff-summary-card"><strong>${summary.remove}</strong><span>Removed</span></article>`,
+    `<article class="diff-summary-card"><strong>${summary.change}</strong><span>Changed</span></article>`
+  ].join("");
+}
+
+function renderDiffResults(items, truncated) {
+  if (!items.length) {
+    elements.diffResults.innerHTML = "<article class=\"diff-block\"><h3>No differences</h3><p>The two versions are identical.</p></article>";
+    state.diffSummaryText = "No differences detected.";
+    return;
+  }
+  renderDiffSummaryItems(items, truncated);
+  elements.diffResults.innerHTML = items.slice(0, 80).map((item) => {
+    if (item.type === "same") {
+      return [
+        `<article class="diff-block same">`,
+        `  <div class="diff-block-header"><span>Line ${item.leftLine}</span><strong>Unchanged</strong></div>`,
+        `  <pre class="diff-code">${escapeHtml(item.leftText || "(blank line)")}</pre>`,
+        "</article>"
+      ].join("");
+    }
+    if (item.type === "add") {
+      return [
+        `<article class="diff-block add">`,
+        `  <div class="diff-block-header"><span>Right ${item.rightLine}</span><strong>Added</strong></div>`,
+        `  <pre class="diff-code diff-code-add">${escapeHtml(item.rightText || "(blank line)")}</pre>`,
+        "</article>"
+      ].join("");
+    }
+    if (item.type === "remove") {
+      return [
+        `<article class="diff-block remove">`,
+        `  <div class="diff-block-header"><span>Left ${item.leftLine}</span><strong>Removed</strong></div>`,
+        `  <pre class="diff-code diff-code-remove">${escapeHtml(item.leftText || "(blank line)")}</pre>`,
+        "</article>"
+      ].join("");
+    }
+    return [
+      `<article class="diff-block change">`,
+      `  <div class="diff-block-header"><span>Left ${item.leftLine} / Right ${item.rightLine}</span><strong>Changed</strong></div>`,
+      "  <div class=\"diff-change-grid\">",
+      `    <div><span class="diff-side-label">Before</span><pre class="diff-code diff-code-remove">${buildTokenMarkup(item.leftText, item.rightText, "left")}</pre></div>`,
+      `    <div><span class="diff-side-label">After</span><pre class="diff-code diff-code-add">${buildTokenMarkup(item.leftText, item.rightText, "right")}</pre></div>`,
+      "  </div>",
+      "</article>"
+    ].join("");
+  }).join("");
+}
+
+function compareDiffInputs() {
+  const left = elements.diffLeftInput.value;
+  const right = elements.diffRightInput.value;
+  if (!left.trim() && !right.trim()) {
+    elements.diffSummary.innerHTML = "";
+    elements.diffResults.innerHTML = "<article class=\"diff-block\"><h3>Add content to compare</h3><p>Paste or import two versions of a file to inspect the changes.</p></article>";
+    state.diffSummaryText = "";
+    return;
+  }
+  const result = computeLineDiff(left, right);
+  renderDiffResults(result.items, result.truncated);
+}
+
+function loadDiffExample() {
+  elements.diffLeftInput.value = DIFF_EXAMPLE.left || "";
+  elements.diffRightInput.value = DIFF_EXAMPLE.right || "";
+  compareDiffInputs();
+}
+
+function clearDiffPane(side = "left") {
+  if (side === "left") elements.diffLeftInput.value = "";
+  if (side === "right") elements.diffRightInput.value = "";
+  compareDiffInputs();
+}
+
+function swapDiffInputs() {
+  const left = elements.diffLeftInput.value;
+  elements.diffLeftInput.value = elements.diffRightInput.value;
+  elements.diffRightInput.value = left;
+  compareDiffInputs();
+}
+
+async function readTextFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+}
+
+async function importToolHtmlFile(file) {
+  if (!file) return;
+  const content = await readTextFile(file);
+  elements.toolHtmlInput.value = content;
+  persistToolDraft();
+  renderToolStats();
+  setToolStatus("Imported", `${file.name} was loaded into the HTML tool editor.`, "ok");
+}
+
+async function importDiffFile(side, file) {
+  if (!file) return;
+  const content = await readTextFile(file);
+  if (side === "left") elements.diffLeftInput.value = content;
+  else elements.diffRightInput.value = content;
+  compareDiffInputs();
 }
 
 function renderEditorBadges() {
@@ -1823,6 +2541,9 @@ function routeTo(route) {
   elements.landingHero.classList.toggle("hidden", route !== "projects");
   elements.landingView.classList.remove("hidden");
   elements.workspaceView.classList.add("hidden");
+  if (route === "templates") renderTemplateGallery();
+  if (route === "tools") renderToolStats();
+  if (route === "diff") compareDiffInputs();
 }
 
 function openWorkspace(projectId) {
@@ -3093,6 +3814,7 @@ function attachEventHandlers() {
     if (!requireAuth("Sign in to create your first synced project.")) return;
     await createProject("Untitled Project");
   });
+  elements.heroOpenTools.addEventListener("click", () => routeTo("tools"));
   document.getElementById("new-project-button").addEventListener("click", async () => {
     if (!requireAuth("Sign in to create a new project.")) return;
     const name = await promptForValue({
@@ -3128,6 +3850,69 @@ function attachEventHandlers() {
   elements.projectSortSelect.addEventListener("change", (event) => {
     state.projectSort = event.target.value;
     renderProjectGrid();
+  });
+  elements.toolRunButton.addEventListener("click", runToolWorkbench);
+  elements.toolLoadExampleButton.addEventListener("click", loadToolExample);
+  elements.toolClearButton.addEventListener("click", clearToolWorkbench);
+  elements.toolOpenWorkspaceButton.addEventListener("click", openToolInWorkspace);
+  elements.toolDownloadHtmlButton.addEventListener("click", downloadToolHtml);
+  elements.toolDownloadPdfButton.addEventListener("click", downloadToolPdf);
+  elements.toolImportHtmlButton.addEventListener("click", () => elements.toolHtmlFileInput.click());
+  elements.toolHtmlFileInput.addEventListener("change", async (event) => {
+    await importToolHtmlFile(event.target.files?.[0]);
+    event.target.value = "";
+  });
+  [elements.toolHtmlInput, elements.toolCssInput, elements.toolJsInput].forEach((field) => {
+    field.addEventListener("input", () => {
+      persistToolDraft();
+      renderToolStats();
+    });
+  });
+  [elements.toolModeSelect, elements.toolPageSize, elements.toolPageOrientation].forEach((field) => {
+    field.addEventListener("change", () => {
+      syncToolModeControls();
+      persistToolDraft();
+      renderToolStats();
+    });
+  });
+  elements.templateSearchInput.addEventListener("input", (event) => {
+    state.templateSearchQuery = event.target.value;
+    renderTemplateGallery();
+  });
+  elements.templateCategorySelect.addEventListener("change", (event) => {
+    state.templateCategory = event.target.value;
+    renderTemplateGallery();
+  });
+  elements.templateUseButton.addEventListener("click", useSelectedTemplate);
+  elements.diffCompareButton.addEventListener("click", compareDiffInputs);
+  elements.diffLoadExampleButton.addEventListener("click", loadDiffExample);
+  elements.diffSwapButton.addEventListener("click", swapDiffInputs);
+  elements.diffCopySummaryButton.addEventListener("click", async () => {
+    if (!state.diffSummaryText) {
+      compareDiffInputs();
+    }
+    if (!state.diffSummaryText) return;
+    await copyTextValue(state.diffSummaryText, "Diff summary copied to the clipboard.");
+    const original = elements.diffCopySummaryButton.textContent;
+    elements.diffCopySummaryButton.textContent = "Copied";
+    setTimeout(() => {
+      elements.diffCopySummaryButton.textContent = original;
+    }, 1200);
+  });
+  elements.diffLeftUploadButton.addEventListener("click", () => elements.diffLeftFileInput.click());
+  elements.diffRightUploadButton.addEventListener("click", () => elements.diffRightFileInput.click());
+  elements.diffLeftClearButton.addEventListener("click", () => clearDiffPane("left"));
+  elements.diffRightClearButton.addEventListener("click", () => clearDiffPane("right"));
+  elements.diffLeftFileInput.addEventListener("change", async (event) => {
+    await importDiffFile("left", event.target.files?.[0]);
+    event.target.value = "";
+  });
+  elements.diffRightFileInput.addEventListener("change", async (event) => {
+    await importDiffFile("right", event.target.files?.[0]);
+    event.target.value = "";
+  });
+  [elements.diffLeftInput, elements.diffRightInput].forEach((field) => {
+    field.addEventListener("input", compareDiffInputs);
   });
 
   const openRepoModal = () => {
@@ -3292,6 +4077,15 @@ async function boot() {
   routeTo("projects");
   syncPagedControls();
   updatePreviewZoom();
+  populateToolWorkbench(loadToolDraft());
+  if (elements.toolHtmlInput.value.trim()) {
+    runToolWorkbench();
+  }
+  renderTemplateCategoryOptions();
+  renderTemplateGallery();
+  if (!elements.diffLeftInput.value && !elements.diffRightInput.value) {
+    loadDiffExample();
+  }
   await initSupabase();
   await updateUserCount();
   await loadProjects();

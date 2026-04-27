@@ -32,6 +32,9 @@
 
       <nav class="top-tabs" aria-label="Primary">
         <button class="top-tab active" data-route="projects">Projects</button>
+        <button class="top-tab" data-route="tools">Tools</button>
+        <button class="top-tab" data-route="templates">Templates</button>
+        <button class="top-tab" data-route="diff">Diff</button>
         <button class="top-tab" data-route="founders">Founders</button>
         <button class="top-tab" data-route="users">Users</button>
       </nav>
@@ -61,13 +64,14 @@
           <div class="hero-actions">
             <button class="primary-button" id="hero-open-workspace">Open Workspace</button>
             <button class="ghost-button" id="hero-import-repo">Import GitHub Repo</button>
+            <button class="ghost-button" id="hero-open-tools">Open Tools</button>
           </div>
         </div>
         <div class="hero-summary">
           <div class="hero-summary-card">
-            <span class="hero-summary-label">Workspace shape</span>
-            <strong>Projects, files, editor, preview</strong>
-            <p>One calm surface for multi-file authoring, structured compile modes, and project-level tools.</p>
+            <span class="hero-summary-label">Product shape</span>
+            <strong>Projects, templates, tools, and diff</strong>
+            <p>One calmer surface for multi-file authoring, public conversion tools, starter templates, and review workflows.</p>
           </div>
           <div class="hero-summary-metrics">
             <div class="hero-metric">
@@ -75,12 +79,12 @@
               <strong>3</strong>
             </div>
             <div class="hero-metric">
-              <span>File Types</span>
-              <strong>10+</strong>
+              <span>Templates</span>
+              <strong>10</strong>
             </div>
             <div class="hero-metric">
-              <span>Preview</span>
-              <strong>Live</strong>
+              <span>Utilities</span>
+              <strong>4</strong>
             </div>
           </div>
         </div>
@@ -150,6 +154,170 @@
             <div class="projects-grid" id="projects-grid"></div>
           </div>
         </div>
+      </section>
+
+      <section class="route-panel" id="route-tools">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Tools</p>
+            <h2>Fast utilities for one-off conversion work.</h2>
+          </div>
+          <div class="section-actions">
+            <button class="ghost-button" id="tool-load-example">Load Example</button>
+            <button class="ghost-button" id="tool-clear-button">Clear</button>
+            <button class="primary-button" id="tool-open-workspace-button">Open In Workspace</button>
+          </div>
+        </div>
+        <div class="tool-suite-grid">
+          <section class="tool-editor-card">
+            <div class="tool-editor-toolbar">
+              <label class="field compact-field dashboard-field">
+                <span>Mode</span>
+                <select id="tool-mode-select">
+                  <option value="freestyle">Freestyle</option>
+                  <option value="paged">Paged</option>
+                  <option value="app">App</option>
+                </select>
+              </label>
+              <label class="field compact-field dashboard-field" id="tool-page-size-wrap">
+                <span>Page Size</span>
+                <select id="tool-page-size">
+                  <option value="A4">A4</option>
+                  <option value="A3">A3</option>
+                  <option value="Letter">Letter</option>
+                  <option value="Legal">Legal</option>
+                  <option value="Tabloid">Tabloid</option>
+                </select>
+              </label>
+              <label class="field compact-field dashboard-field" id="tool-page-orientation-wrap">
+                <span>Orientation</span>
+                <select id="tool-page-orientation">
+                  <option value="portrait">Portrait</option>
+                  <option value="landscape">Landscape</option>
+                </select>
+              </label>
+              <div class="tool-inline-actions">
+                <button class="ghost-button compact" id="tool-import-html-button">Import HTML</button>
+                <button class="primary-button compact" id="tool-run-button">Run Tool</button>
+              </div>
+            </div>
+            <div class="tool-editor-grid">
+              <label class="tool-pane">
+                <span>HTML</span>
+                <textarea id="tool-html-input" spellcheck="false" placeholder="Paste or write HTML here."></textarea>
+              </label>
+              <label class="tool-pane">
+                <span>CSS</span>
+                <textarea id="tool-css-input" spellcheck="false" placeholder="Optional CSS for styling."></textarea>
+              </label>
+              <label class="tool-pane">
+                <span>JavaScript</span>
+                <textarea id="tool-js-input" spellcheck="false" placeholder="Optional JavaScript for app mode interactions."></textarea>
+              </label>
+            </div>
+          </section>
+          <aside class="tool-preview-card">
+            <div class="tool-preview-header">
+              <div>
+                <p class="eyebrow">Preview</p>
+                <h3>Instant output preview</h3>
+              </div>
+              <div class="tool-preview-actions">
+                <button class="ghost-button compact" id="tool-download-html-button">HTML</button>
+                <button class="ghost-button compact" id="tool-download-pdf-button">PDF</button>
+              </div>
+            </div>
+            <div class="tool-statusbar">
+              <span id="tool-status">Ready</span>
+              <span id="tool-detail">Load the example or paste your own source to preview and export.</span>
+            </div>
+            <div class="tool-stats" id="tool-stats"></div>
+            <div class="tool-preview-frame-wrap">
+              <iframe id="tool-preview-frame" title="Tool preview" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads allow-same-origin"></iframe>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="route-panel" id="route-templates">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Templates</p>
+            <h2>Start from stronger structures, not a blank page.</h2>
+          </div>
+        </div>
+        <div class="templates-shell">
+          <section class="templates-browser">
+            <div class="templates-toolbar">
+              <label class="field compact-field dashboard-field">
+                <span>Search templates</span>
+                <input type="search" id="template-search-input" placeholder="Portfolio, report, docs, invoice">
+              </label>
+              <label class="field compact-field dashboard-field">
+                <span>Category</span>
+                <select id="template-category-select">
+                  <option value="all">All Categories</option>
+                </select>
+              </label>
+            </div>
+            <div class="templates-grid" id="templates-grid"></div>
+          </section>
+          <aside class="template-preview-card">
+            <div class="template-preview-copy">
+              <p class="eyebrow">Preview</p>
+              <h3 id="template-preview-title">Choose a template</h3>
+              <p id="template-preview-meta">Pick any template to inspect its structure and create a project from it.</p>
+            </div>
+            <div class="template-preview-actions">
+              <button class="primary-button" id="template-use-button">Use Template</button>
+            </div>
+            <div class="template-preview-notes" id="template-preview-notes"></div>
+            <div class="template-preview-frame-wrap">
+              <iframe id="template-preview-frame" title="Template preview" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads allow-same-origin"></iframe>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="route-panel" id="route-diff">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Diff</p>
+            <h2>Compare revisions without opening the full workspace.</h2>
+          </div>
+          <div class="section-actions">
+            <button class="ghost-button" id="diff-load-example-button">Load Example</button>
+            <button class="ghost-button" id="diff-swap-button">Swap</button>
+            <button class="ghost-button" id="diff-copy-summary-button">Copy Summary</button>
+            <button class="primary-button" id="diff-compare-button">Compare</button>
+          </div>
+        </div>
+        <section class="diff-shell">
+          <div class="diff-editor-grid">
+            <div class="diff-pane">
+              <div class="diff-pane-header">
+                <strong>Original</strong>
+                <div class="diff-pane-actions">
+                  <button class="ghost-button compact" id="diff-left-upload-button">Import</button>
+                  <button class="ghost-button compact" id="diff-left-clear-button">Clear</button>
+                </div>
+              </div>
+              <textarea id="diff-left-input" spellcheck="false" placeholder="Paste the original version here."></textarea>
+            </div>
+            <div class="diff-pane">
+              <div class="diff-pane-header">
+                <strong>Updated</strong>
+                <div class="diff-pane-actions">
+                  <button class="ghost-button compact" id="diff-right-upload-button">Import</button>
+                  <button class="ghost-button compact" id="diff-right-clear-button">Clear</button>
+                </div>
+              </div>
+              <textarea id="diff-right-input" spellcheck="false" placeholder="Paste the revised version here."></textarea>
+            </div>
+          </div>
+          <div class="diff-summary" id="diff-summary"></div>
+          <div class="diff-results" id="diff-results"></div>
+        </section>
       </section>
 
       <section class="route-panel" id="route-founders">
@@ -447,7 +615,7 @@
             <h3>Compile to render output</h3>
             <p>Freestyle and Paged create a PDF preview. App opens a sandboxed interactive site preview.</p>
           </div>
-          <iframe id="preview-frame" title="Compiled output"></iframe>
+          <iframe id="preview-frame" title="Compiled output" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads allow-same-origin"></iframe>
         </div>
       </section>
     </main>
@@ -526,6 +694,9 @@
   </div>
 
   <input type="file" id="image-upload-input" accept="image/*" multiple class="hidden">
+  <input type="file" id="tool-html-file-input" accept=".html,.htm,.txt" class="hidden">
+  <input type="file" id="diff-left-file-input" accept=".html,.htm,.css,.js,.json,.md,.txt,.py" class="hidden">
+  <input type="file" id="diff-right-file-input" accept=".html,.htm,.css,.js,.json,.md,.txt,.py" class="hidden">
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.17/jstree.min.js"></script>
@@ -543,6 +714,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.js"></script>
+  <script src="./assets/product-data.js"></script>
   <script type="module" src="./assets/app.js"></script>
 </body>
 </html>
