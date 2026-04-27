@@ -93,16 +93,16 @@
         </div>
         <div class="founders-grid">
           <article class="info-card">
-            <h3>Built for writing-first builders</h3>
-            <p>HTMLLeaf keeps the editor, file tree, and output close enough that you can think in documents or interfaces without switching tools.</p>
+            <h3>Founder - Rudra Jadhav</h3>
+            <p>Leading HTMLLeaf with a writing-first product vision focused on a cleaner editing workflow, practical compile tools, and a sharper overall experience.</p>
           </article>
           <article class="info-card">
-            <h3>Maintained under the pasterpo banner</h3>
-            <p>This surface is intentionally lightweight: the focus is a practical editor with functional project infrastructure, not marketing chrome.</p>
+            <h3>Co-founder - Panavin Singh</h3>
+            <p>Helping shape the product, polish the workspace, and push HTMLLeaf toward a more dependable and professional editor for real project work.</p>
           </article>
           <article class="info-card">
-            <h3>Quarterfinal direction</h3>
-            <p>The current pass prioritizes stable scaffolding: a central project home, mode-aware compilation, GitHub import, and calmer UX over visual theatrics.</p>
+            <h3>What HTMLLeaf is building</h3>
+            <p>HTMLLeaf is growing into a focused browser workspace for structured HTML projects, with calmer design, multi-file editing, and practical compile modes.</p>
           </article>
         </div>
       </section>
@@ -131,34 +131,81 @@
             <p class="eyebrow">Workspace</p>
             <h2 id="project-name">Untitled Project</h2>
           </div>
-          <button class="ghost-button compact" id="back-to-projects">Back</button>
+          <div class="sidebar-header-actions">
+            <button class="ghost-button compact" id="rename-project-action">Rename</button>
+            <button class="ghost-button compact" id="back-to-projects">Back</button>
+          </div>
         </div>
 
-        <div class="tree-toolbar">
-          <button class="ghost-button compact" id="new-file-action">New File</button>
-          <button class="ghost-button compact" id="new-folder-action">New Folder</button>
-          <button class="ghost-button compact" id="rename-node-action">Rename</button>
-          <button class="ghost-button compact" id="delete-node-action">Delete</button>
-          <button class="ghost-button compact" id="upload-image-action">Upload Image</button>
+        <div class="workspace-panel-tabs" role="tablist" aria-label="Workspace sections">
+          <button class="workspace-panel-tab active" data-sidebar-panel="files">Files</button>
+          <button class="workspace-panel-tab" data-sidebar-panel="outline">Outline</button>
+          <button class="workspace-panel-tab" data-sidebar-panel="snippets">Snippets</button>
+          <button class="workspace-panel-tab" data-sidebar-panel="activity">Activity</button>
         </div>
 
-        <div class="tree-panel">
-          <div id="file-tree"></div>
-        </div>
+        <section class="workspace-panel active" data-sidebar-panel-view="files">
+          <div class="sidebar-panel-copy">
+            <label class="field compact-field">
+              <span>Search files</span>
+              <input type="search" id="file-tree-search" placeholder="Find files, folders, assets">
+            </label>
+          </div>
+
+          <div class="tree-toolbar">
+            <button class="ghost-button compact" id="new-file-action">New File</button>
+            <button class="ghost-button compact" id="new-folder-action">New Folder</button>
+            <button class="ghost-button compact" id="rename-node-action">Rename</button>
+            <button class="ghost-button compact" id="delete-node-action">Delete</button>
+            <button class="ghost-button compact" id="upload-image-action">Upload Image</button>
+          </div>
+
+          <div class="tree-panel">
+            <div id="file-tree"></div>
+          </div>
+        </section>
+
+        <section class="workspace-panel" data-sidebar-panel-view="outline">
+          <div class="sidebar-panel-copy">
+            <p>Outline updates from the active HTML document so you can jump between sections quickly.</p>
+          </div>
+          <div class="outline-panel" id="outline-panel"></div>
+        </section>
+
+        <section class="workspace-panel" data-sidebar-panel-view="snippets">
+          <div class="sidebar-panel-copy">
+            <p>Insert starter blocks for the current language without leaving the editor.</p>
+          </div>
+          <div class="snippet-panel" id="snippet-panel"></div>
+        </section>
+
+        <section class="workspace-panel" data-sidebar-panel-view="activity">
+          <div class="sidebar-panel-copy">
+            <p>Recent workspace actions stay attached to this project while you edit, compile, and import.</p>
+          </div>
+          <div class="activity-panel" id="activity-panel"></div>
+        </section>
 
         <div class="sidebar-footnote">
           <p id="workspace-storage-label">Cloud sync inactive.</p>
           <p id="workspace-entry-label">Entry file: <span id="entry-file-label">index.html</span></p>
+          <p>Panel: <span id="workspace-panel-label">Files</span></p>
         </div>
       </aside>
 
       <section class="editor-pane">
         <div class="editor-header">
+          <div class="editor-actions">
+            <button class="ghost-button compact" id="editor-wrap-toggle">Wrap Off</button>
+            <button class="ghost-button compact" id="editor-format-button">Format</button>
+            <span class="editor-shortcuts">Ctrl+S save | Ctrl+Enter compile | Ctrl+Shift+F format</span>
+          </div>
           <div class="tab-strip" id="tab-strip"></div>
           <div class="editor-meta">
             <span id="active-file-path">index.html</span>
             <span id="active-file-language">HTML</span>
           </div>
+          <div class="editor-badges" id="editor-badges"></div>
         </div>
         <textarea id="editor"></textarea>
       </section>

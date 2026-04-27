@@ -41,6 +41,177 @@ const LANGUAGE_BY_EXTENSION = {
 
 const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp", "ico"]);
 const PREVIEWABLE_EXTENSIONS = new Set(["html", "htm"]);
+const SIDEBAR_PANEL_LABELS = {
+  files: "Files",
+  outline: "Outline",
+  snippets: "Snippets",
+  activity: "Activity"
+};
+const SNIPPETS_BY_FAMILY = {
+  html: [
+    {
+      title: "Section Block",
+      detail: "A clean content section with heading and paragraph copy.",
+      content: [
+        "<section class=\"content-section\">",
+        "  <h2>Section title</h2>",
+        "  <p>Write a clear supporting paragraph here.</p>",
+        "</section>"
+      ].join("\n")
+    },
+    {
+      title: "Card Grid",
+      detail: "Three feature cards for product or document layouts.",
+      content: [
+        "<section class=\"card-grid\">",
+        "  <article class=\"card\">",
+        "    <h3>First block</h3>",
+        "    <p>Describe the first item.</p>",
+        "  </article>",
+        "  <article class=\"card\">",
+        "    <h3>Second block</h3>",
+        "    <p>Describe the second item.</p>",
+        "  </article>",
+        "  <article class=\"card\">",
+        "    <h3>Third block</h3>",
+        "    <p>Describe the third item.</p>",
+        "  </article>",
+        "</section>"
+      ].join("\n")
+    },
+    {
+      title: "Data Table",
+      detail: "A starter table for schedules, reports, or documentation.",
+      content: [
+        "<table>",
+        "  <thead>",
+        "    <tr><th>Label</th><th>Value</th><th>Notes</th></tr>",
+        "  </thead>",
+        "  <tbody>",
+        "    <tr><td>Row one</td><td>Value</td><td>Details</td></tr>",
+        "    <tr><td>Row two</td><td>Value</td><td>Details</td></tr>",
+        "  </tbody>",
+        "</table>"
+      ].join("\n")
+    }
+  ],
+  css: [
+    {
+      title: "Surface Tokens",
+      detail: "Neutral color tokens and spacing variables.",
+      content: [
+        ":root {",
+        "  --bg: #f4f6f8;",
+        "  --surface: #ffffff;",
+        "  --text: #18212b;",
+        "  --muted: #61707f;",
+        "  --border: #d8dee6;",
+        "  --accent: #0f6c5b;",
+        "}"
+      ].join("\n")
+    },
+    {
+      title: "Responsive Grid",
+      detail: "A flexible grid for cards or mixed content.",
+      content: [
+        ".grid {",
+        "  display: grid;",
+        "  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));",
+        "  gap: 20px;",
+        "}"
+      ].join("\n")
+    },
+    {
+      title: "Print Page Rules",
+      detail: "Useful print defaults for paged PDF output.",
+      content: [
+        "@media print {",
+        "  body {",
+        "    color: #111111;",
+        "    background: #ffffff;",
+        "  }",
+        "",
+        "  .page-break {",
+        "    break-before: page;",
+        "  }",
+        "}"
+      ].join("\n")
+    }
+  ],
+  javascript: [
+    {
+      title: "Query + Click",
+      detail: "Bind a click action and update text in the DOM.",
+      content: [
+        "const button = document.querySelector('[data-action]');",
+        "const output = document.querySelector('[data-output]');",
+        "",
+        "if (button && output) {",
+        "  button.addEventListener('click', () => {",
+        "    output.textContent = 'Updated from JavaScript.';",
+        "  });",
+        "}"
+      ].join("\n")
+    },
+    {
+      title: "Async Fetch",
+      detail: "A small async data-loading helper.",
+      content: [
+        "async function loadJson(url) {",
+        "  const response = await fetch(url);",
+        "  if (!response.ok) throw new Error(`Request failed: ${response.status}`);",
+        "  return response.json();",
+        "}"
+      ].join("\n")
+    },
+    {
+      title: "App Init",
+      detail: "A lightweight startup function for interactive previews.",
+      content: [
+        "function initApp() {",
+        "  console.log('HTMLLeaf app preview ready');",
+        "}",
+        "",
+        "document.addEventListener('DOMContentLoaded', initApp);"
+      ].join("\n")
+    }
+  ],
+  python: [
+    {
+      title: "Main Entry",
+      detail: "Simple Python script entrypoint.",
+      content: [
+        "def main():",
+        "    print('Hello from HTMLLeaf Python')",
+        "",
+        "",
+        "if __name__ == '__main__':",
+        "    main()"
+      ].join("\n")
+    },
+    {
+      title: "Utility Function",
+      detail: "Starter function with clear arguments and return value.",
+      content: [
+        "def summarize(name, count):",
+        "    return f'{name}: {count}'"
+      ].join("\n")
+    }
+  ],
+  generic: [
+    {
+      title: "Comment Block",
+      detail: "A neutral scaffold for notes or TODOs.",
+      content: [
+        "/*",
+        "  Context:",
+        "  Next step:",
+        "  Notes:",
+        "*/"
+      ].join("\n")
+    }
+  ]
+};
 
 const elements = {
   landingView: document.getElementById("landing-view"),
@@ -68,6 +239,9 @@ const elements = {
   previewFrame: document.getElementById("preview-frame"),
   previewEmptyState: document.getElementById("preview-empty-state"),
   pdfRender: document.getElementById("pdf-render"),
+  editorWrapToggle: document.getElementById("editor-wrap-toggle"),
+  editorFormatButton: document.getElementById("editor-format-button"),
+  editorBadges: document.getElementById("editor-badges"),
   projectName: document.getElementById("project-name"),
   tabStrip: document.getElementById("tab-strip"),
   activeFilePath: document.getElementById("active-file-path"),
@@ -76,6 +250,12 @@ const elements = {
   workspaceStorageLabel: document.getElementById("workspace-storage-label"),
   workspaceSidebar: document.getElementById("workspace-sidebar"),
   workspaceMenuToggle: document.getElementById("workspace-menu-toggle"),
+  renameProjectAction: document.getElementById("rename-project-action"),
+  fileTreeSearch: document.getElementById("file-tree-search"),
+  outlinePanel: document.getElementById("outline-panel"),
+  snippetPanel: document.getElementById("snippet-panel"),
+  activityPanel: document.getElementById("activity-panel"),
+  workspacePanelLabel: document.getElementById("workspace-panel-label"),
   authModal: document.getElementById("auth-modal"),
   authTitle: document.getElementById("auth-title"),
   authCopy: document.getElementById("auth-copy"),
@@ -113,8 +293,12 @@ const state = {
   lastCompiledHtml: "",
   lastCompiledFileName: "document.html",
   lastCompiledMode: "freestyle",
+  editorWrapEnabled: false,
+  sidebarPanel: "files",
+  treeFilter: "",
   objectUrls: new Set(),
   saveTimer: null,
+  panelRefreshTimer: null,
   promptHandler: null,
   promptResolver: null,
   userCount: null
@@ -235,6 +419,9 @@ function createStarterProject(name = "Untitled Project") {
     pageOrientation: "portrait",
     selectedFileId: htmlId,
     openFileIds: [htmlId, cssId, jsId],
+    activityLog: [
+      createActivityEntry("Project created", "Starter HTML, CSS, JavaScript, and asset files are ready.", "system")
+    ],
     nodes: [
       { id: rootId, parentId: null, type: "folder", name: "root" },
       { id: assetsId, parentId: rootId, type: "folder", name: "assets" },
@@ -404,6 +591,7 @@ function upgradeProjectShape(rawProject) {
   if (!project.compileMode) project.compileMode = "freestyle";
   if (!project.pageSize) project.pageSize = "A4";
   if (!project.pageOrientation) project.pageOrientation = "portrait";
+  if (!Array.isArray(project.activityLog)) project.activityLog = [];
   project.nodes = project.nodes.map((node) => ({
     content: "",
     mime: null,
@@ -449,6 +637,265 @@ function setCompileStatus(status, detail, kind = "idle") {
   elements.compileStatus.textContent = status;
   elements.compileDetail.textContent = detail;
   elements.compileStatus.dataset.kind = kind;
+}
+
+function timestampLabel(value) {
+  const date = new Date(value);
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function createActivityEntry(title, detail, kind = "note", at = new Date().toISOString()) {
+  return { id: uuid(), title, detail, kind, at };
+}
+
+function updateWorkspacePanelLabel() {
+  elements.workspacePanelLabel.textContent = SIDEBAR_PANEL_LABELS[state.sidebarPanel] || "Files";
+}
+
+function setSidebarPanel(panel) {
+  state.sidebarPanel = SIDEBAR_PANEL_LABELS[panel] ? panel : "files";
+  qsa("[data-sidebar-panel]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.sidebarPanel === state.sidebarPanel);
+  });
+  qsa("[data-sidebar-panel-view]").forEach((section) => {
+    section.classList.toggle("active", section.dataset.sidebarPanelView === state.sidebarPanel);
+  });
+  updateWorkspacePanelLabel();
+}
+
+function recordProjectActivity(title, detail, kind = "note") {
+  if (!state.activeProject) return;
+  if (!Array.isArray(state.activeProject.activityLog)) state.activeProject.activityLog = [];
+  state.activeProject.activityLog.unshift(createActivityEntry(title, detail, kind));
+  state.activeProject.activityLog = state.activeProject.activityLog.slice(0, 36);
+  renderActivityPanel();
+}
+
+function setEmptyPanel(target, message) {
+  target.innerHTML = `<div class="sidebar-empty">${escapeHtml(message)}</div>`;
+}
+
+function countWords(value) {
+  const parts = value.trim().split(/\s+/).filter(Boolean);
+  return parts.length;
+}
+
+function renderEditorBadges() {
+  if (!state.activeProject) {
+    elements.editorBadges.innerHTML = "";
+    return;
+  }
+  const activeNode = getNode(state.activeProject, state.activeFileId);
+  const source = activeNode && !isImageNode(activeNode) ? editor.getValue() : "";
+  const lines = source ? source.split("\n").length : 0;
+  const words = source ? countWords(source) : 0;
+  const fileCount = state.activeProject.nodes.filter((node) => node.type === "file").length;
+  const badges = [
+    `${fileCount} files`,
+    `${state.openFileIds.length} tabs`,
+    `${lines} lines`,
+    words ? `${words} words` : "0 words",
+    `Mode: ${elements.compileMode.value}`
+  ];
+  elements.editorBadges.innerHTML = badges.map((label) => `<span class="editor-badge">${escapeHtml(label)}</span>`).join("");
+}
+
+function scheduleWorkspaceRefresh() {
+  clearTimeout(state.panelRefreshTimer);
+  state.panelRefreshTimer = setTimeout(() => {
+    renderOutlinePanel();
+    renderSnippetPanel();
+    renderEditorBadges();
+  }, 120);
+}
+
+function getSnippetFamily(name = "") {
+  const extension = getExtension(name);
+  if (extension === "css") return "css";
+  if (["js", "mjs", "cjs", "ts", "jsx", "tsx"].includes(extension)) return "javascript";
+  if (extension === "py") return "python";
+  if (["html", "htm"].includes(extension)) return "html";
+  return "generic";
+}
+
+function insertSnippet(content, title) {
+  if (!state.activeProject || !state.activeFileId) return;
+  const activeNode = getNode(state.activeProject, state.activeFileId);
+  if (!activeNode || isImageNode(activeNode)) return;
+  editor.replaceRange(`${content}\n`, editor.getCursor());
+  setCompileStatus("Inserted snippet", `${title} was added to ${activeNode.name}.`, "ok");
+  recordProjectActivity("Inserted snippet", `${title} was inserted into ${activeNode.name}.`, "edit");
+  scheduleWorkspaceRefresh();
+}
+
+function renderSnippetPanel() {
+  if (!state.activeProject || !state.activeFileId) {
+    setEmptyPanel(elements.snippetPanel, "Open a file to see quick insert blocks.");
+    return;
+  }
+  const activeNode = getNode(state.activeProject, state.activeFileId);
+  if (!activeNode || isImageNode(activeNode)) {
+    setEmptyPanel(elements.snippetPanel, "Snippets are available for text files only.");
+    return;
+  }
+  const family = getSnippetFamily(activeNode.name);
+  const snippets = SNIPPETS_BY_FAMILY[family] || SNIPPETS_BY_FAMILY.generic;
+  elements.snippetPanel.innerHTML = `<div class="snippet-list">${snippets.map((snippet) => [
+    "<article class=\"snippet-card\">",
+    `  <h4>${escapeHtml(snippet.title)}</h4>`,
+    `  <p>${escapeHtml(snippet.detail)}</p>`,
+    "  <div class=\"snippet-card-actions\">",
+    `    <span class="activity-badge">${escapeHtml((family || "generic").toUpperCase())}</span>`,
+    `    <button class="ghost-button compact" data-snippet-title="${escapeHtml(snippet.title)}">Insert</button>`,
+    "  </div>",
+    "</article>"
+  ].join("")).join("")}</div>`;
+  qsa("[data-snippet-title]", elements.snippetPanel).forEach((button, index) => {
+    button.addEventListener("click", () => insertSnippet(snippets[index].content, snippets[index].title));
+  });
+}
+
+function findLineNumber(source, predicate) {
+  const lines = source.split("\n");
+  for (let index = 0; index < lines.length; index += 1) {
+    if (predicate(lines[index])) return index;
+  }
+  return 0;
+}
+
+function buildOutlineItems(node) {
+  if (!node || !PREVIEWABLE_EXTENSIONS.has(getExtension(node.name))) return [];
+  const source = node.id === state.activeFileId ? editor.getValue() : (node.content || "");
+  const doc = new DOMParser().parseFromString(source || "", "text/html");
+  const headingItems = Array.from(doc.querySelectorAll("h1,h2,h3,h4,h5,h6")).map((element) => {
+    const text = element.textContent.replace(/\s+/g, " ").trim();
+    const tag = element.tagName.toLowerCase();
+    const line = findLineNumber(source, (entry) => entry.toLowerCase().includes(`<${tag}`) && (!text || entry.includes(text.slice(0, 18))));
+    return {
+      label: text || tag.toUpperCase(),
+      level: Number(tag.slice(1)),
+      line,
+      meta: tag.toUpperCase()
+    };
+  });
+  const landmarks = Array.from(doc.querySelectorAll("main,section[id],article[id],nav[id],header[id],footer[id]"))
+    .slice(0, 8)
+    .map((element) => {
+      const tag = element.tagName.toLowerCase();
+      const marker = element.id || element.getAttribute("aria-label") || tag;
+      const line = findLineNumber(source, (entry) => entry.toLowerCase().includes(`<${tag}`) && (!element.id || entry.includes(element.id)));
+      return {
+        label: marker,
+        level: 1,
+        line,
+        meta: "LANDMARK"
+      };
+    });
+  return [...landmarks, ...headingItems].slice(0, 24);
+}
+
+function renderOutlinePanel() {
+  if (!state.activeProject) {
+    setEmptyPanel(elements.outlinePanel, "Open a project to generate an outline.");
+    return;
+  }
+  const activeNode = getNode(state.activeProject, state.activeFileId);
+  const sourceNode = activeNode && PREVIEWABLE_EXTENSIONS.has(getExtension(activeNode.name))
+    ? activeNode
+    : getEntryFile(state.activeProject);
+  if (!sourceNode) {
+    setEmptyPanel(elements.outlinePanel, "Add an HTML file to generate an outline.");
+    return;
+  }
+  const items = buildOutlineItems(sourceNode);
+  if (!items.length) {
+    setEmptyPanel(elements.outlinePanel, "Add headings like h1-h6 or named sections to build a document outline.");
+    return;
+  }
+  elements.outlinePanel.innerHTML = `<div class="outline-list">${items.map((item) => [
+    `<button class="outline-item" data-outline-line="${item.line}" data-level="${item.level}" type="button">`,
+    `  <strong>${escapeHtml(item.label)}</strong>`,
+    `  <small>${escapeHtml(sourceNode.name)} | ${escapeHtml(item.meta)} | line ${item.line + 1}</small>`,
+    "</button>"
+  ].join("")).join("")}</div>`;
+  qsa("[data-outline-line]", elements.outlinePanel).forEach((button) => {
+    button.addEventListener("click", () => {
+      if (state.activeFileId !== sourceNode.id) activateFile(sourceNode.id);
+      const line = Number(button.dataset.outlineLine) || 0;
+      editor.focus();
+      editor.setCursor({ line, ch: 0 });
+      editor.scrollIntoView({ line, ch: 0 }, 120);
+      setCompileStatus("Outline jump", `Moved to line ${line + 1} in ${sourceNode.name}.`, "ok");
+    });
+  });
+}
+
+function renderActivityPanel() {
+  if (!state.activeProject || !Array.isArray(state.activeProject.activityLog) || !state.activeProject.activityLog.length) {
+    setEmptyPanel(elements.activityPanel, "Activity will appear here as you edit, import, save, and compile.");
+    return;
+  }
+  elements.activityPanel.innerHTML = `<div class="activity-list">${state.activeProject.activityLog.map((entry) => [
+    "<article class=\"activity-item\">",
+    `  <h4>${escapeHtml(entry.title)}</h4>`,
+    `  <p>${escapeHtml(entry.detail)}</p>`,
+    "  <div class=\"activity-meta\">",
+    `    <span class="activity-badge">${escapeHtml((entry.kind || "note").toUpperCase())}</span>`,
+    `    <time datetime="${escapeHtml(entry.at)}">${escapeHtml(timestampLabel(entry.at))}</time>`,
+    "  </div>",
+    "</article>"
+  ].join("")).join("")}</div>`;
+}
+
+function updateWrapButton() {
+  elements.editorWrapToggle.textContent = state.editorWrapEnabled ? "Wrap On" : "Wrap Off";
+}
+
+function toggleEditorWrap() {
+  state.editorWrapEnabled = !state.editorWrapEnabled;
+  editor.setOption("lineWrapping", state.editorWrapEnabled);
+  updateWrapButton();
+  setCompileStatus("Editor updated", `Line wrapping is now ${state.editorWrapEnabled ? "on" : "off"}.`, "ok");
+}
+
+function formatCurrentFile() {
+  if (!state.activeProject || !state.activeFileId) return;
+  const activeNode = getNode(state.activeProject, state.activeFileId);
+  if (!activeNode || isImageNode(activeNode)) return;
+  const source = editor.getValue();
+  const extension = getExtension(activeNode.name);
+  let formatted = source;
+
+  if (extension === "html" || extension === "htm") {
+    formatted = source
+      .replace(/>\s*</g, ">\n<")
+      .replace(/<(\/?)(body|head|main|section|article|div|header|footer|aside|nav|ul|ol|li|table|tr|tbody|thead|script|style)([^>]*)>/gi, "\n<$1$2$3>")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  } else if (extension === "css") {
+    formatted = source
+      .replace(/\s*{\s*/g, " {\n  ")
+      .replace(/;\s*/g, ";\n  ")
+      .replace(/\s*}\s*/g, "\n}\n")
+      .replace(/\n\s+\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  } else if (["js", "mjs", "cjs", "ts", "jsx", "tsx"].includes(extension)) {
+    formatted = source
+      .replace(/;\s*/g, ";\n")
+      .replace(/\{\s*/g, "{\n")
+      .replace(/\}\s*/g, "}\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  } else {
+    formatted = source.replace(/\t/g, "  ");
+  }
+
+  if (formatted && formatted !== source) {
+    editor.setValue(formatted);
+    setCompileStatus("Formatted", `${activeNode.name} was reformatted for readability.`, "ok");
+    recordProjectActivity("Formatted file", `${activeNode.name} was normalized for readability.`, "edit");
+  }
 }
 
 function markProjectDirty() {
@@ -525,22 +972,29 @@ function openWorkspace(projectId) {
   state.lastCompiledHtml = "";
   state.lastCompiledMode = state.activeProject.compileMode || "freestyle";
   state.lastCompiledFileName = "document.html";
+  state.treeFilter = "";
+  state.sidebarPanel = "files";
   elements.previewFrame.src = "about:blank";
   elements.previewFrame.removeAttribute("srcdoc");
   elements.previewEmptyState.classList.remove("hidden");
-  elements.downloadPdfButton.disabled = elements.compileMode.value === "app";
   saveLastProjectId(projectId);
   elements.projectName.textContent = state.activeProject.name;
   elements.workspaceStorageLabel.textContent = state.backendReachable && state.currentUser
     ? "Cloud sync active."
     : "Local draft mode.";
+  elements.fileTreeSearch.value = "";
   elements.compileMode.value = state.activeProject.compileMode || "freestyle";
   elements.pageSize.value = state.activeProject.pageSize || "A4";
   elements.pageOrientation.value = state.activeProject.pageOrientation || "portrait";
   syncPagedControls();
+  setSidebarPanel(state.sidebarPanel);
   elements.landingView.classList.add("hidden");
   elements.workspaceView.classList.remove("hidden");
   renderTree();
+  renderActivityPanel();
+  renderSnippetPanel();
+  renderOutlinePanel();
+  renderEditorBadges();
   renderTabs();
   activateFile(state.activeFileId || findFirstFileId(state.activeProject));
 }
@@ -627,22 +1081,49 @@ function renderProjectGrid() {
   });
 }
 
+function visibleTreeIds(project, query) {
+  if (!query) return new Set(project.nodes.map((node) => node.id));
+  const normalizedQuery = query.toLowerCase();
+  const visible = new Set();
+  project.nodes.forEach((node) => {
+    const path = node.parentId === null ? project.name : getNodePath(project, node.id);
+    const haystack = `${node.name} ${path}`.toLowerCase();
+    if (!haystack.includes(normalizedQuery)) return;
+    let current = node;
+    while (current) {
+      visible.add(current.id);
+      current = current.parentId ? getNode(project, current.parentId) : null;
+    }
+  });
+  return visible;
+}
+
 function renderTree() {
   if (!state.activeProject) return;
+  const visibleIds = visibleTreeIds(state.activeProject, state.treeFilter);
+  const filteredNodes = state.activeProject.nodes.filter((node) => visibleIds.has(node.id));
+  if (!filteredNodes.length) {
+    $("#file-tree").off();
+    if ($("#file-tree").jstree(true)) $("#file-tree").jstree("destroy");
+    setEmptyPanel(document.getElementById("file-tree"), `No files match "${state.treeFilter}".`);
+    return;
+  }
   const treeData = state.activeProject.nodes
+    .filter((node) => visibleIds.has(node.id))
     .filter((node) => node.parentId !== null || node.type === "folder")
     .map((node) => ({
       id: node.id,
       parent: node.parentId ? node.parentId : "#",
       text: node.parentId === null ? state.activeProject.name : node.name,
       icon: fileIcon(node),
-      state: { opened: node.type === "folder" },
+      state: { opened: node.type === "folder" || Boolean(state.treeFilter) },
       data: node
     }));
 
   const treeRoot = $("#file-tree");
   treeRoot.off();
   if (treeRoot.jstree(true)) treeRoot.jstree("destroy");
+  treeRoot.html("");
   treeRoot.jstree({
     core: {
       data: treeData,
@@ -661,6 +1142,7 @@ function renderTree() {
 
   if (state.activeFileId) {
     treeRoot.one("ready.jstree", () => {
+      if (state.treeFilter) treeRoot.jstree(true).open_all();
       treeRoot.jstree(true).select_node(state.activeFileId);
     });
   }
@@ -732,6 +1214,7 @@ function activateFile(fileId) {
   elements.activeFileLanguage.textContent = language.label;
   elements.entryFileLabel.textContent = getEntryFile(state.activeProject)?.name || "None";
   renderTabs();
+  scheduleWorkspaceRefresh();
   const tree = $("#file-tree").jstree(true);
   if (tree) tree.select_node(fileId);
 }
@@ -741,6 +1224,7 @@ function syncEditorToProject() {
   const node = getNode(state.activeProject, state.activeFileId);
   if (!node || node.type !== "file" || isImageNode(node)) return;
   node.content = editor.getValue();
+  scheduleWorkspaceRefresh();
   markProjectDirty();
 }
 
@@ -800,9 +1284,27 @@ async function createNode(type) {
     mime: null
   });
   markProjectDirty();
+  recordProjectActivity(isFolder ? "Created folder" : "Created file", `${name} was added to the workspace.`, "edit");
   renderTree();
   const created = state.activeProject.nodes[state.activeProject.nodes.length - 1];
   if (!isFolder) activateFile(created.id);
+}
+
+async function renameActiveProject() {
+  if (!state.activeProject) return;
+  const nextName = await promptForValue({
+    label: "Project",
+    title: "Rename project",
+    value: state.activeProject.name,
+    confirmLabel: "Rename project"
+  });
+  if (!nextName) return;
+  state.activeProject.name = nextName.trim();
+  elements.projectName.textContent = state.activeProject.name;
+  markProjectDirty();
+  recordProjectActivity("Renamed project", `Project is now named ${state.activeProject.name}.`, "edit");
+  renderProjectGrid();
+  renderTree();
 }
 
 async function renameSelectedNode() {
@@ -817,8 +1319,10 @@ async function renameSelectedNode() {
     confirmLabel: "Rename"
   });
   if (!nextName) return;
+  const previousName = node.name;
   node.name = nextName.trim();
   markProjectDirty();
+  recordProjectActivity("Renamed node", `${previousName} is now ${node.name}.`, "edit");
   renderTree();
   renderTabs();
   if (node.type === "file") activateFile(node.id);
@@ -843,6 +1347,7 @@ async function deleteSelectedNode() {
     state.activeFileId = findFirstFileId(state.activeProject);
   }
   markProjectDirty();
+  recordProjectActivity("Deleted node", `${node.name} was removed from the workspace.`, "edit");
   renderTree();
   renderTabs();
   if (state.activeFileId) activateFile(state.activeFileId);
@@ -868,6 +1373,7 @@ async function handleImageUpload(files) {
   const created = await Promise.all(fileReads);
   state.activeProject.nodes.push(...created);
   markProjectDirty();
+  recordProjectActivity("Uploaded assets", `${created.length} image ${created.length === 1 ? "file" : "files"} added to the project.`, "asset");
   renderTree();
 }
 
@@ -1010,14 +1516,18 @@ async function saveProjectRecord(project) {
   persistLocalProjects(local);
 }
 
-async function saveCurrentProject() {
+async function saveCurrentProject(options = {}) {
   if (!state.activeProject) return;
+  const { logActivity = false, statusMessage = false } = options;
   state.activeProject.compileMode = elements.compileMode.value;
   state.activeProject.pageSize = elements.pageSize.value;
   state.activeProject.pageOrientation = elements.pageOrientation.value;
   state.activeProject.openFileIds = [...state.openFileIds];
   state.activeProject.selectedFileId = state.activeFileId;
   state.activeProject.updatedAt = new Date().toISOString();
+  if (logActivity) {
+    recordProjectActivity("Saved project", `${state.activeProject.name} was saved to ${state.backendReachable && state.currentUser ? "cloud sync" : "local drafts"}.`, "save");
+  }
   await saveProjectRecord(state.activeProject);
   state.activeProjectId = state.activeProject.id;
   saveLastProjectId(state.activeProject.id);
@@ -1027,6 +1537,9 @@ async function saveCurrentProject() {
   else state.projects.unshift(cloneProject(state.activeProject));
   renderProjectGrid();
   elements.workspaceStorageLabel.textContent = state.backendReachable && state.currentUser ? "Cloud sync active." : "Local draft mode.";
+  if (statusMessage) {
+    setCompileStatus("Saved", `${state.activeProject.name} was saved successfully.`, "ok");
+  }
 }
 
 async function deleteProject(projectId) {
@@ -1050,6 +1563,7 @@ async function createProject(name) {
   await saveProjectRecord(project);
   await loadProjects();
   openWorkspace(project.id);
+  recordProjectActivity("Opened workspace", `${project.name} is ready for editing.`, "system");
 }
 
 function requireAuth(message = "Sign in to continue.") {
@@ -1393,6 +1907,9 @@ async function compileProject() {
             ? `Preview compiled with ${elements.pageSize.value} ${elements.pageOrientation.value} framing.`
             : "Preview compiled from the document as-is.";
         setCompileStatus("Compiled", detail, "ok");
+        recordProjectActivity("Compiled project", `${entryFile.name} compiled in ${mode} mode.`, "compile");
+        renderEditorBadges();
+        scheduleAutosave();
       };
 
       frame.removeAttribute("src");
@@ -1406,6 +1923,8 @@ async function compileProject() {
       state.compiled = false;
       elements.previewEmptyState.classList.remove("hidden");
       setCompileStatus("Compile error", error.message, "error");
+      recordProjectActivity("Compile error", error.message, "error");
+      scheduleAutosave();
     }
   }, 80);
 }
@@ -1423,7 +1942,8 @@ function downloadHTML() {
   const source = targetNode.id === state.activeFileId && !isImageNode(targetNode)
     ? editor.getValue()
     : (targetNode.content || state.lastCompiledHtml || "");
-  const blob = new Blob([source], { type: "text/html;charset=utf-8" });
+  const mimeType = `${inferMimeType(targetNode) || "text/plain"};charset=utf-8`;
+  const blob = new Blob([source], { type: mimeType });
   const anchor = document.createElement("a");
   anchor.href = URL.createObjectURL(blob);
   anchor.download = fileName;
@@ -1431,6 +1951,8 @@ function downloadHTML() {
   anchor.click();
   document.body.removeChild(anchor);
   setTimeout(() => URL.revokeObjectURL(anchor.href), 2000);
+  recordProjectActivity("Downloaded file", `${fileName} was downloaded from the active workspace.`, "export");
+  scheduleAutosave();
 }
 
 function downloadPDF() {
@@ -1492,6 +2014,8 @@ function downloadPDF() {
         button.disabled = false;
         button.textContent = "PDF";
         setCompileStatus("Compiled", `PDF saved: ${fileName}`, "ok");
+        recordProjectActivity("Exported PDF", `${fileName} was generated from the compiled preview.`, "export");
+        scheduleAutosave();
       }).catch((error) => {
         elements.pdfRender.innerHTML = "";
         elements.pdfRender.style.width = "";
@@ -1499,6 +2023,8 @@ function downloadPDF() {
         button.textContent = "PDF";
         alert(`PDF error: ${error.message}`);
         setCompileStatus("Compile error", error.message, "error");
+        recordProjectActivity("PDF export error", error.message, "error");
+        scheduleAutosave();
       });
     }, 300);
   } catch (error) {
@@ -1508,6 +2034,8 @@ function downloadPDF() {
     button.textContent = "PDF";
     alert(`PDF error: ${error.message}`);
     setCompileStatus("Compile error", error.message, "error");
+    recordProjectActivity("PDF export error", error.message, "error");
+    scheduleAutosave();
   }
 }
 
@@ -1558,13 +2086,10 @@ async function importRepository(url) {
   const entries = (tree.tree || []).filter((entry) => {
     if (entry.type !== "blob" || !isBrowserFriendlyPath(entry.path)) return false;
     return !parsed.basePath || entry.path.startsWith(`${parsed.basePath}/`) || entry.path === parsed.basePath;
-  });
+  }).slice(0, DEMO_LIMIT * 10);
 
   if (!entries.length) {
     throw new Error("No browser-friendly files were found in that repository.");
-  }
-  if (entries.length > DEMO_LIMIT * 10) {
-    throw new Error("This repository is too large for HTMLLeaf's direct import flow. Try a smaller static repo.");
   }
 
   const project = createStarterProject(`${parsed.repo} import`);
@@ -1621,6 +2146,10 @@ async function importRepository(url) {
 
   project.name = parsed.basePath ? `${repoMeta.name} / ${parsed.basePath.split("/").pop()}` : (repoMeta.name || project.name);
   project.openFileIds = project.selectedFileId ? [project.selectedFileId] : [];
+  project.activityLog = [
+    createActivityEntry("Imported repository", `${entries.length} browser-friendly files were imported from ${parsed.owner}/${parsed.repo}.`, "import"),
+    ...project.activityLog
+  ].slice(0, 36);
   await saveProjectRecord(project);
   await loadProjects();
   openWorkspace(project.id);
@@ -1677,6 +2206,14 @@ function attachEventHandlers() {
   });
 
   document.getElementById("back-to-projects").addEventListener("click", closeWorkspace);
+  elements.renameProjectAction.addEventListener("click", renameActiveProject);
+  qsa("[data-sidebar-panel]").forEach((button) => {
+    button.addEventListener("click", () => setSidebarPanel(button.dataset.sidebarPanel));
+  });
+  elements.fileTreeSearch.addEventListener("input", (event) => {
+    state.treeFilter = event.target.value.trim();
+    renderTree();
+  });
   document.getElementById("new-file-action").addEventListener("click", () => createNode("file"));
   document.getElementById("new-folder-action").addEventListener("click", () => createNode("folder"));
   document.getElementById("rename-node-action").addEventListener("click", renameSelectedNode);
@@ -1689,14 +2226,23 @@ function attachEventHandlers() {
 
   elements.compileMode.addEventListener("change", () => {
     syncPagedControls();
+    renderEditorBadges();
     markProjectDirty();
   });
+  elements.editorWrapToggle.addEventListener("click", toggleEditorWrap);
+  elements.editorFormatButton.addEventListener("click", formatCurrentFile);
   elements.compileButton.addEventListener("click", () => compileProject());
   elements.downloadHtmlButton.addEventListener("click", downloadHTML);
   elements.downloadPdfButton.addEventListener("click", downloadPDF);
-  elements.saveProjectButton.addEventListener("click", () => saveCurrentProject());
-  elements.pageSize.addEventListener("change", markProjectDirty);
-  elements.pageOrientation.addEventListener("change", markProjectDirty);
+  elements.saveProjectButton.addEventListener("click", () => saveCurrentProject({ logActivity: true, statusMessage: true }));
+  elements.pageSize.addEventListener("change", () => {
+    renderEditorBadges();
+    markProjectDirty();
+  });
+  elements.pageOrientation.addEventListener("change", () => {
+    renderEditorBadges();
+    markProjectDirty();
+  });
 
   elements.authSubmit.addEventListener("click", submitAuth);
   qsa("[data-auth-mode]").forEach((button) => {
@@ -1741,18 +2287,21 @@ function attachEventHandlers() {
 function initEditor() {
   editor = window.CodeMirror.fromTextArea(document.getElementById("editor"), {
     lineNumbers: true,
-    lineWrapping: false,
+    lineWrapping: state.editorWrapEnabled,
     mode: "htmlmixed",
     indentUnit: 2,
     tabSize: 2,
     extraKeys: {
-      "Ctrl-S": () => saveCurrentProject(),
-      "Cmd-S": () => saveCurrentProject(),
+      "Ctrl-S": () => saveCurrentProject({ logActivity: true, statusMessage: true }),
+      "Cmd-S": () => saveCurrentProject({ logActivity: true, statusMessage: true }),
       "Ctrl-Enter": () => compileProject(),
-      "Cmd-Enter": () => compileProject()
+      "Cmd-Enter": () => compileProject(),
+      "Ctrl-Shift-F": () => formatCurrentFile(),
+      "Cmd-Shift-F": () => formatCurrentFile()
     }
   });
   editor.on("change", syncEditorToProject);
+  updateWrapButton();
 }
 
 async function boot() {
