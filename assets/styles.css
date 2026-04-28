@@ -63,9 +63,6 @@ html {
   background: rgba(70, 85, 99, 0.7);
 }
 
-body {
-  overflow: hidden;
-}
 
 #pdf-render {
   position: fixed;
