@@ -1,0 +1,196 @@
+/* ===== Editor Pane ===== */
+
+.editor-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  background: var(--ol-panel);
+  border-right: 1px solid var(--ol-border);
+}
+
+/* Tab strip */
+.editor-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--ol-panel-inset);
+  border-bottom: 1px solid var(--ol-border);
+  min-height: 36px;
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+
+.editor-tabs::-webkit-scrollbar {
+  height: 0;
+}
+
+.editor-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  font-size: var(--ol-font-size-sm);
+  color: var(--ol-text-secondary);
+  border-right: 1px solid var(--ol-border-subtle);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--ol-transition-fast);
+  position: relative;
+}
+
+.editor-tab:hover {
+  background: var(--ol-panel);
+  color: var(--ol-text);
+}
+
+.editor-tab.active {
+  background: var(--ol-panel);
+  color: var(--ol-text);
+  font-weight: 500;
+}
+
+.editor-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--ol-green);
+}
+
+.editor-tab svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0.5;
+}
+
+.editor-tab-close {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ol-radius-xs);
+  opacity: 0;
+  transition: all var(--ol-transition-fast);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.editor-tab:hover .editor-tab-close {
+  opacity: 0.5;
+}
+
+.editor-tab-close:hover {
+  opacity: 1 !important;
+  background: rgba(0,0,0,0.08);
+}
+
+/* Editor toolbar */
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--ol-space-sm);
+  padding: 4px var(--ol-space-md);
+  border-bottom: 1px solid var(--ol-border-subtle);
+  background: var(--ol-panel-raised);
+  flex-shrink: 0;
+}
+
+.editor-toolbar-btn {
+  padding: 4px 8px;
+  border-radius: var(--ol-radius-xs);
+  font-size: var(--ol-font-size-xs);
+  color: var(--ol-text-secondary);
+  transition: all var(--ol-transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.editor-toolbar-btn:hover {
+  background: var(--ol-panel-inset);
+  color: var(--ol-text);
+}
+
+.editor-toolbar-btn.active {
+  background: var(--ol-green-soft);
+  color: var(--ol-green);
+}
+
+.editor-toolbar-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--ol-border);
+}
+
+.editor-toolbar-spacer {
+  flex: 1;
+}
+
+.editor-toolbar-meta {
+  font-size: var(--ol-font-size-xs);
+  color: var(--ol-text-tertiary);
+}
+
+/* CodeMirror container */
+.editor-cm-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.editor-cm-wrap .cm-editor {
+  height: 100%;
+  font-family: var(--ol-font-mono);
+  font-size: 14px;
+}
+
+.editor-cm-wrap .cm-editor .cm-scroller {
+  overflow: auto;
+}
+
+.editor-cm-wrap .cm-editor.cm-focused {
+  outline: none;
+}
+
+.editor-cm-wrap .cm-gutters {
+  background: var(--ol-panel-raised);
+  border-right: 1px solid var(--ol-border-subtle);
+  color: var(--ol-text-tertiary);
+}
+
+.editor-cm-wrap .cm-activeLineGutter {
+  background: var(--ol-green-muted);
+}
+
+.editor-cm-wrap .cm-activeLine {
+  background: rgba(74, 143, 60, 0.04);
+}
+
+/* No file open */
+.editor-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ol-space-md);
+  color: var(--ol-text-tertiary);
+  text-align: center;
+  padding: var(--ol-space-xl);
+}
+
+.editor-empty svg {
+  width: 48px;
+  height: 48px;
+  opacity: 0.3;
+}
+
+.editor-empty p {
+  font-size: var(--ol-font-size-sm);
+  max-width: 280px;
+  line-height: 1.6;
+}

@@ -1,0 +1,89 @@
+/* ===== HTMLeaf — Overleaf-Inspired Design Tokens ===== */
+
+:root {
+  /* Primary Green (Overleaf signature) */
+  --ol-green: #4a8f3c;
+  --ol-green-hover: #3d7a31;
+  --ol-green-active: #2d6422;
+  --ol-green-soft: #e6f4e3;
+  --ol-green-muted: rgba(74, 143, 60, 0.12);
+
+  /* Surfaces */
+  --ol-bg: #f0f0f0;
+  --ol-panel: #ffffff;
+  --ol-panel-raised: #fafbfc;
+  --ol-panel-inset: #f5f6f8;
+
+  /* Top Toolbar */
+  --ol-toolbar-bg: #455a64;
+  --ol-toolbar-text: #eceff1;
+  --ol-toolbar-hover: rgba(255, 255, 255, 0.08);
+  --ol-toolbar-active: rgba(255, 255, 255, 0.14);
+  --ol-toolbar-border: rgba(255, 255, 255, 0.06);
+
+  /* Sidebar */
+  --ol-sidebar-bg: #2c3e50;
+  --ol-sidebar-text: #b0bec5;
+  --ol-sidebar-hover: rgba(255, 255, 255, 0.06);
+  --ol-sidebar-active: #1a252f;
+  --ol-sidebar-accent: #4a8f3c;
+
+  /* Text */
+  --ol-text: #2c3e50;
+  --ol-text-secondary: #607d8b;
+  --ol-text-tertiary: #90a4ae;
+  --ol-text-inverse: #ffffff;
+
+  /* Borders */
+  --ol-border: #dee2e6;
+  --ol-border-strong: #c8cdd2;
+  --ol-border-subtle: #eceef0;
+
+  /* Status */
+  --ol-danger: #c0392b;
+  --ol-danger-soft: #fce8e6;
+  --ol-warning: #e67e22;
+  --ol-warning-soft: #fef3e2;
+  --ol-success: #27ae60;
+  --ol-info: #2980b9;
+
+  /* Shadows */
+  --ol-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --ol-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --ol-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+  --ol-shadow-focus: 0 0 0 3px rgba(74, 143, 60, 0.25);
+
+  /* Radii */
+  --ol-radius-xs: 4px;
+  --ol-radius-sm: 6px;
+  --ol-radius-md: 8px;
+  --ol-radius-lg: 12px;
+  --ol-radius-xl: 16px;
+
+  /* Spacing */
+  --ol-space-xs: 4px;
+  --ol-space-sm: 8px;
+  --ol-space-md: 12px;
+  --ol-space-lg: 16px;
+  --ol-space-xl: 24px;
+  --ol-space-2xl: 32px;
+
+  /* Layout */
+  --ol-toolbar-height: 48px;
+  --ol-sidebar-rail-width: 52px;
+  --ol-sidebar-panel-width: 260px;
+
+  /* Typography */
+  --ol-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --ol-font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  --ol-font-size-xs: 0.7rem;
+  --ol-font-size-sm: 0.8rem;
+  --ol-font-size-base: 0.875rem;
+  --ol-font-size-md: 1rem;
+  --ol-font-size-lg: 1.125rem;
+
+  /* Transitions */
+  --ol-transition-fast: 120ms ease;
+  --ol-transition-normal: 200ms ease;
+  --ol-transition-slow: 320ms ease;
+}

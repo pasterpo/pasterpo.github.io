@@ -1,0 +1,182 @@
+/* ===== Toolbar — Overleaf-style dark top bar ===== */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  height: var(--ol-toolbar-height);
+  background: var(--ol-toolbar-bg);
+  color: var(--ol-toolbar-text);
+  padding: 0 var(--ol-space-md);
+  gap: var(--ol-space-xs);
+  user-select: none;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.toolbar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--ol-space-sm);
+  padding: var(--ol-space-xs) var(--ol-space-sm);
+  border-radius: var(--ol-radius-sm);
+  cursor: pointer;
+  transition: background var(--ol-transition-fast);
+  text-decoration: none;
+  color: inherit;
+  flex-shrink: 0;
+}
+
+.toolbar-brand:hover {
+  background: var(--ol-toolbar-hover);
+  text-decoration: none;
+}
+
+.toolbar-brand-icon {
+  width: 28px;
+  height: 28px;
+  background: var(--ol-green);
+  border-radius: var(--ol-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--ol-font-size-sm);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.toolbar-brand-text {
+  font-weight: 600;
+  font-size: var(--ol-font-size-base);
+  letter-spacing: -0.01em;
+}
+
+/* Menu bar */
+.toolbar-menus {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: var(--ol-space-sm);
+}
+
+.toolbar-menu-trigger {
+  padding: 6px 10px;
+  border-radius: var(--ol-radius-sm);
+  font-size: var(--ol-font-size-sm);
+  color: var(--ol-toolbar-text);
+  transition: background var(--ol-transition-fast);
+  position: relative;
+  white-space: nowrap;
+}
+
+.toolbar-menu-trigger:hover,
+.toolbar-menu-trigger.active {
+  background: var(--ol-toolbar-hover);
+}
+
+/* Dropdown */
+.toolbar-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  min-width: 200px;
+  background: var(--ol-panel);
+  border: 1px solid var(--ol-border);
+  border-radius: var(--ol-radius-md);
+  box-shadow: var(--ol-shadow-lg);
+  padding: var(--ol-space-xs) 0;
+  z-index: 100;
+  color: var(--ol-text);
+}
+
+.toolbar-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--ol-space-sm);
+  width: 100%;
+  padding: 8px 14px;
+  font-size: var(--ol-font-size-sm);
+  color: var(--ol-text);
+  transition: background var(--ol-transition-fast);
+  text-align: left;
+}
+
+.toolbar-dropdown-item:hover {
+  background: var(--ol-green-soft);
+}
+
+.toolbar-dropdown-item .shortcut {
+  margin-left: auto;
+  color: var(--ol-text-tertiary);
+  font-size: var(--ol-font-size-xs);
+}
+
+.toolbar-dropdown-divider {
+  height: 1px;
+  background: var(--ol-border-subtle);
+  margin: var(--ol-space-xs) 0;
+}
+
+/* Project name */
+.toolbar-project-name {
+  display: flex;
+  align-items: center;
+  gap: var(--ol-space-xs);
+  margin-left: auto;
+  margin-right: auto;
+  padding: 5px 12px;
+  border-radius: var(--ol-radius-sm);
+  font-size: var(--ol-font-size-sm);
+  font-weight: 500;
+  max-width: 280px;
+  cursor: pointer;
+  transition: background var(--ol-transition-fast);
+}
+
+.toolbar-project-name:hover {
+  background: var(--ol-toolbar-hover);
+}
+
+.toolbar-project-name .chevron {
+  opacity: 0.5;
+  font-size: 10px;
+}
+
+/* Right actions */
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.toolbar-action {
+  display: flex;
+  align-items: center;
+  gap: var(--ol-space-xs);
+  padding: 6px 10px;
+  border-radius: var(--ol-radius-sm);
+  font-size: var(--ol-font-size-sm);
+  color: var(--ol-toolbar-text);
+  transition: background var(--ol-transition-fast);
+  white-space: nowrap;
+}
+
+.toolbar-action:hover {
+  background: var(--ol-toolbar-hover);
+}
+
+.toolbar-action svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--ol-toolbar-border);
+  margin: 0 var(--ol-space-xs);
+}
