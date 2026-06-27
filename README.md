@@ -1,3 +1,9 @@
+# HTMLeaf
+
+HTMLeaf is a React + Vite web app for creating and managing HTML document projects with a file tree, CodeMirror-powered editing, live compile/preview, and PDF export.
+
+---
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
