@@ -30,7 +30,7 @@
 .dashboard-header-right {
   display: flex;
   align-items: center;
-  gap: var(--ol-space-sm);
+  gap: var(--ol-space-md);
 }
 
 .dashboard-body {

@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import BrandLogo from './brand/BrandLogo';
-import { Columns, PanelLeft, PanelRight, Download, FileText, Play } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Columns, PanelLeft, PanelRight, Download, FileText, Play, BookOpen } from 'lucide-react';
 
 const LAYOUT_ICONS = {
   split: Columns,
@@ -111,6 +112,10 @@ export default function Toolbar() {
                     <button type="button" className="toolbar-dropdown-item" onClick={() => setOpenMenu(null)}>
                       Toggle Word Wrap <span className="shortcut">⌥Z</span>
                     </button>
+                    <div className="toolbar-dropdown-divider" />
+                    <Link to="/help" className="toolbar-dropdown-item" onClick={() => setOpenMenu(null)}>
+                      <BookOpen size={14} /> Help
+                    </Link>
                   </>
                 )}
               </div>

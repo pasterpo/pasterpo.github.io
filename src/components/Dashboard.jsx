@@ -3,7 +3,8 @@ import { useApp } from '../context/AppContext';
 import BrandLogo from './brand/BrandLogo';
 import ProjectCard from './ProjectCard';
 import EmptyState from './EmptyState';
-import { Plus } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, BookOpen } from 'lucide-react';
 
 export default function Dashboard() {
   const { state, dispatch, createProject, openProject, deleteProject } = useApp();
@@ -66,6 +67,10 @@ export default function Dashboard() {
           <BrandLogo size="lg" />
         </div>
         <div className="dashboard-header-right">
+          <Link to="/help" className="btn-help-link">
+            <BookOpen size={16} />
+            Help
+          </Link>
           <button type="button" className="btn-new-project" onClick={() => setShowNewModal(true)}>
             <Plus size={16} />
             New Project

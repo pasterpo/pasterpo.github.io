@@ -10,6 +10,7 @@ import './styles/editor.css'
 import './styles/preview.css'
 import './styles/workspace.css'
 import './styles/dashboard.css'
+import './styles/help.css'
 import App from './App'
 
 createRoot(document.getElementById('root')).render(

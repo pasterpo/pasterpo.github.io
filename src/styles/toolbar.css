@@ -92,6 +92,12 @@
 
 .toolbar-dropdown-item:hover {
   background: var(--ol-green-soft);
+  text-decoration: none;
+}
+
+a.toolbar-dropdown-item {
+  text-decoration: none;
+  color: var(--ol-text);
 }
 
 .toolbar-dropdown-item .shortcut {
