@@ -5,6 +5,7 @@ import HelpPage from './components/HelpPage';
 import Toolbar from './components/Toolbar';
 import Sidebar from './components/Sidebar';
 import SplitWorkspace from './components/SplitWorkspace';
+import ToastContainer from './components/ToastContainer';
 
 function EditorView() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="/" element={<HomeRoute />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <ToastContainer />
     </BrowserRouter>
   );
 }
