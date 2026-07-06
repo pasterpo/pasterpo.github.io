@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Plus, FileText, Trash2, Clock, FolderOpen, Search, Copy } from 'lucide-react';
+import BrandLogo from './brand/BrandLogo';
+import { Plus, FileText, Trash2, FolderOpen, Copy } from 'lucide-react';
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -43,7 +44,6 @@ export default function Dashboard() {
     copy.id = crypto.randomUUID();
     copy.name = `${project.name} (Copy)`;
     copy.updatedAt = new Date().toISOString();
-    // Regenerate all node IDs
     const idMap = new Map();
     copy.nodes.forEach(n => {
       const newId = crypto.randomUUID();
@@ -68,13 +68,9 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard">
-      {/* Header */}
       <header className="dashboard-header">
         <div className="dashboard-header-left">
-          <div className="dashboard-brand">
-            <div className="dashboard-brand-icon">H</div>
-            <span className="dashboard-brand-text">HTMLeaf</span>
-          </div>
+          <BrandLogo size="lg" />
         </div>
         <div className="dashboard-header-right">
           <button className="btn-new-project" onClick={() => setShowNewModal(true)}>
@@ -84,9 +80,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Body */}
       <div className="dashboard-body">
-        {/* Toolbar */}
         <div className="dashboard-toolbar">
           <div className="dashboard-toolbar-left">
             <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--ol-text)' }}>
@@ -114,14 +108,13 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Content */}
         {filtered.length === 0 ? (
           <div className="dashboard-empty">
             <FolderOpen size={80} />
             {state.projects.length === 0 ? (
               <>
                 <h2>No projects yet</h2>
-                <p>Create your first project to start writing HTML documents with live preview and PDF export — just like Overleaf, but for HTML.</p>
+                <p>Create your first project to start writing HTML documents with live preview and PDF export in Clover Leaf.</p>
                 <button className="btn-new-project" onClick={() => setShowNewModal(true)}>
                   <Plus size={16} />
                   Create Your First Project
@@ -159,18 +152,10 @@ export default function Dashboard() {
                     <td className="project-files-cell">{fileCount} file{fileCount !== 1 ? 's' : ''}</td>
                     <td>
                       <div className="project-actions-cell">
-                        <button
-                          className="project-action-btn"
-                          title="Duplicate"
-                          onClick={(e) => handleDuplicate(e, project)}
-                        >
+                        <button className="project-action-btn" title="Duplicate" onClick={(e) => handleDuplicate(e, project)}>
                           <Copy size={16} />
                         </button>
-                        <button
-                          className="project-action-btn danger"
-                          title="Delete"
-                          onClick={(e) => handleDelete(e, project.id)}
-                        >
+                        <button className="project-action-btn danger" title="Delete" onClick={(e) => handleDelete(e, project.id)}>
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -183,7 +168,6 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* New Project Modal */}
       {showNewModal && (
         <div className="modal-overlay" onClick={() => setShowNewModal(false)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>

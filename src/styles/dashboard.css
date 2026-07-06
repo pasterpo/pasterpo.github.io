@@ -2,9 +2,7 @@
 .dashboard { height: 100%; display: flex; flex-direction: column; background: var(--ol-bg); }
 .dashboard-header { display: flex; align-items: center; justify-content: space-between; padding: var(--ol-space-lg) var(--ol-space-xl); background: var(--ol-panel); border-bottom: 1px solid var(--ol-border); }
 .dashboard-header-left { display: flex; align-items: center; gap: var(--ol-space-md); }
-.dashboard-brand { display: flex; align-items: center; gap: var(--ol-space-sm); text-decoration: none; color: var(--ol-text); }
-.dashboard-brand-icon { width: 36px; height: 36px; background: var(--ol-green); border-radius: var(--ol-radius-md); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; color: #fff; }
-.dashboard-brand-text { font-size: var(--ol-font-size-lg); font-weight: 700; letter-spacing: -0.02em; }
+.dashboard-header-left .brand-logo-text { color: var(--ol-text); }
 .dashboard-header-right { display: flex; align-items: center; gap: var(--ol-space-sm); }
 .dashboard-body { flex: 1; overflow-y: auto; padding: var(--ol-space-xl) var(--ol-space-2xl); max-width: 1200px; width: 100%; margin: 0 auto; }
 .dashboard-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--ol-space-md); margin-bottom: var(--ol-space-lg); flex-wrap: wrap; }
@@ -16,7 +14,6 @@
 .btn-new-project:hover { background: var(--ol-green-hover); }
 .btn-new-project svg { width: 16px; height: 16px; }
 
-/* Project table */
 .project-table { width: 100%; border-collapse: collapse; background: var(--ol-panel); border: 1px solid var(--ol-border); border-radius: var(--ol-radius-lg); overflow: hidden; box-shadow: var(--ol-shadow-sm); }
 .project-table th { text-align: left; padding: 10px 16px; font-size: var(--ol-font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ol-text-secondary); background: var(--ol-panel-raised); border-bottom: 1px solid var(--ol-border); }
 .project-table td { padding: 12px 16px; border-bottom: 1px solid var(--ol-border-subtle); font-size: var(--ol-font-size-sm); }
@@ -32,13 +29,11 @@
 .project-action-btn:hover { background: var(--ol-panel-inset); color: var(--ol-text); }
 .project-action-btn.danger:hover { background: var(--ol-danger-soft); color: var(--ol-danger); }
 
-/* Empty dashboard */
 .dashboard-empty { text-align: center; padding: 64px var(--ol-space-xl); }
 .dashboard-empty svg { width: 80px; height: 80px; color: var(--ol-text-tertiary); opacity: 0.3; margin-bottom: var(--ol-space-lg); }
 .dashboard-empty h2 { font-size: var(--ol-font-size-lg); color: var(--ol-text-secondary); margin-bottom: var(--ol-space-sm); }
 .dashboard-empty p { font-size: var(--ol-font-size-sm); color: var(--ol-text-tertiary); margin-bottom: var(--ol-space-xl); max-width: 400px; margin-left: auto; margin-right: auto; line-height: 1.6; }
 
-/* Modals */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: var(--ol-space-xl); }
 .modal-card { background: var(--ol-panel); border-radius: var(--ol-radius-lg); box-shadow: var(--ol-shadow-lg); padding: var(--ol-space-xl); width: 100%; max-width: 420px; }
 .modal-card h2 { font-size: var(--ol-font-size-lg); margin-bottom: var(--ol-space-md); }
@@ -51,6 +46,5 @@
 .btn-modal-confirm { padding: 8px 16px; border-radius: var(--ol-radius-sm); font-size: var(--ol-font-size-sm); background: var(--ol-green); color: #fff; font-weight: 600; transition: all var(--ol-transition-fast); }
 .btn-modal-confirm:hover { background: var(--ol-green-hover); }
 
-/* Layout */
 .app-layout { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 .workspace { display: flex; flex: 1; min-height: 0; overflow: hidden; }

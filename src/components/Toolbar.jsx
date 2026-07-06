@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Menu, ChevronDown, History, Share2, Columns, Download, FileText, Settings } from 'lucide-react';
+import BrandLogo from './brand/BrandLogo';
+import { Columns, Download, FileText } from 'lucide-react';
 
 export default function Toolbar() {
   const { state, dispatch, closeProject, renameProject, compile } = useApp();
@@ -44,8 +45,7 @@ export default function Toolbar() {
   return (
     <header className="toolbar" ref={menuRef}>
       <button className="toolbar-brand" onClick={closeProject} title="Back to projects">
-        <span className="toolbar-brand-icon">H</span>
-        <span className="toolbar-brand-text">HTMLeaf</span>
+        <BrandLogo size="md" variant="on-dark" />
       </button>
 
       <div className="toolbar-menus">

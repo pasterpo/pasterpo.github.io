@@ -1,8 +1,13 @@
-/* ===== HTMLeaf — Overleaf-Inspired Design Tokens ===== */
+/* ===== Clover Leaf — Design Tokens ===== */
 
 :root {
-  /* Primary Green (Overleaf signature) */
-  --ol-green: #4a8f3c;
+  /* Clover Leaf brand */
+  --cl-clover-600: #2f6b4f;
+  --cl-clover-500: #3d8b66;
+  --cl-clover-100: #e8f3ec;
+
+  /* Primary Green */
+  --ol-green: #3d8b66;
   --ol-green-hover: #3d7a31;
   --ol-green-active: #2d6422;
   --ol-green-soft: #e6f4e3;
