@@ -1,0 +1,71 @@
+/* ===== Clover Leaf — Brand ===== */
+
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.brand-logo-mark {
+  display: block;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: contain;
+  flex-shrink: 0;
+  background: transparent;
+  box-shadow:
+    0 1px 2px rgba(26, 31, 28, 0.06),
+    0 4px 14px rgba(47, 107, 79, 0.18);
+  transition: transform var(--ol-transition-fast), box-shadow var(--ol-transition-fast);
+}
+
+.brand-logo.sm .brand-logo-mark {
+  width: 32px;
+  height: 32px;
+}
+
+.brand-logo.lg .brand-logo-mark {
+  width: 48px;
+  height: 48px;
+}
+
+.brand-logo-text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35em;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.brand-logo-word {
+  font-size: var(--ol-font-size-lg);
+  color: inherit;
+}
+
+.brand-logo-word.accent {
+  color: var(--cl-clover-600, var(--ol-green));
+}
+
+.brand-logo.on-dark .brand-logo-mark {
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 4px 10px rgba(0, 0, 0, 0.18);
+}
+
+.brand-logo.on-dark .brand-logo-text {
+  color: var(--ol-toolbar-text);
+}
+
+.brand-logo.on-dark .brand-logo-word.accent {
+  color: #8fd4a8;
+}
+
+button:hover .brand-logo-mark,
+a:hover .brand-logo-mark {
+  transform: scale(1.02);
+}
