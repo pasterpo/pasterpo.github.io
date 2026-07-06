@@ -2,8 +2,7 @@ import { useApp } from './context/AppContext';
 import Dashboard from './components/Dashboard';
 import Toolbar from './components/Toolbar';
 import Sidebar from './components/Sidebar';
-import EditorPane from './components/EditorPane';
-import PreviewPane from './components/PreviewPane';
+import SplitWorkspace from './components/SplitWorkspace';
 
 function EditorView() {
   return (
@@ -11,9 +10,7 @@ function EditorView() {
       <Toolbar />
       <div className="workspace">
         <Sidebar />
-        <EditorPane />
-        <div className="resize-handle" />
-        <PreviewPane />
+        <SplitWorkspace />
       </div>
     </div>
   );

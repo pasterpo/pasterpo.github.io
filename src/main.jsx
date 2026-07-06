@@ -8,6 +8,7 @@ import './styles/toolbar.css'
 import './styles/sidebar.css'
 import './styles/editor.css'
 import './styles/preview.css'
+import './styles/workspace.css'
 import './styles/dashboard.css'
 import App from './App'
 
