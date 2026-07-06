@@ -1,10 +1,9 @@
 import logo32 from '../../assets/brand/clover-logo-32.png';
-import logo64 from '../../assets/brand/clover-logo-64.png';
 
 const SIZES = {
-  sm: { box: 32, src: logo32 },
-  md: { box: 40, src: logo64 },
-  lg: { box: 48, src: logo64 },
+  sm: 32,
+  md: 40,
+  lg: 48,
 };
 
 export default function BrandLogo({
@@ -13,13 +12,13 @@ export default function BrandLogo({
   variant = 'default',
   className = '',
 }) {
-  const { box, src } = SIZES[size] || SIZES.md;
+  const box = SIZES[size] || SIZES.md;
 
   return (
     <div className={`brand-logo ${size} ${variant === 'on-dark' ? 'on-dark' : ''} ${className}`.trim()}>
       <img
         className="brand-logo-mark"
-        src={src}
+        src={logo32}
         alt="Clover Leaf"
         width={box}
         height={box}
