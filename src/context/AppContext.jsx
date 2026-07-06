@@ -36,7 +36,7 @@ function createStarterProject(name = 'Untitled Project') {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HTMLeaf Document</title>
+  <title>Clover Leaf Document</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -45,7 +45,7 @@ function createStarterProject(name = 'Untitled Project') {
     <p>Start writing your HTML document here. Use the preview pane to see live output.</p>
     <section>
       <h2>Getting Started</h2>
-      <p>HTMLeaf works like Overleaf, but for HTML. Write your markup in the editor, and compile to see the rendered output or export as PDF.</p>
+      <p>Clover Leaf helps you write HTML with clarity. Edit your markup in the editor, compile to preview, and export as PDF.</p>
     </section>
   </main>
   <script src="script.js"><\/script>
@@ -74,11 +74,21 @@ p { margin-bottom: 1em; }`
       },
       {
         id: jsId, parentId: rootId, type: 'file', name: 'script.js',
-        content: `// HTMLeaf project script
-console.log('HTMLeaf document loaded');`
+        content: `// Clover Leaf project script
+console.log('Clover Leaf document loaded');`
       },
     ],
   };
+}
+
+function readStoredSplitRatio() {
+  try {
+    const stored = parseFloat(localStorage.getItem('cloverleaf-editor-split'));
+    if (!Number.isNaN(stored) && stored >= 0.22 && stored <= 0.78) return stored;
+  } catch {
+    /* ignore */
+  }
+  return 0.5;
 }
 
 const initialState = {
@@ -90,6 +100,8 @@ const initialState = {
   openFileIds: [],
   sidebarPanel: 'files', // 'files' | 'search' | 'review' | 'settings'
   sidebarOpen: true,
+  workspaceLayout: 'split', // 'split' | 'editor' | 'preview'
+  editorSplitRatio: readStoredSplitRatio(),
   compiled: false,
   compileMode: 'freestyle',
   pageSize: 'A4',
@@ -181,6 +193,19 @@ function reducer(state, action) {
 
     case 'TOGGLE_SIDEBAR':
       return { ...state, sidebarOpen: !state.sidebarOpen };
+
+    case 'SET_EDITOR_SPLIT_RATIO':
+      return { ...state, editorSplitRatio: action.payload };
+
+    case 'SET_WORKSPACE_LAYOUT':
+      return { ...state, workspaceLayout: action.payload };
+
+    case 'CYCLE_WORKSPACE_LAYOUT': {
+      const order = ['split', 'editor', 'preview'];
+      const idx = order.indexOf(state.workspaceLayout);
+      const next = order[(idx + 1) % order.length];
+      return { ...state, workspaceLayout: next };
+    }
 
     case 'SET_COMPILE_MODE':
       return { ...state, compileMode: action.payload };
