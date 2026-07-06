@@ -1,11 +1,10 @@
 import logo32 from '../../assets/brand/clover-logo-32.png';
 import logo64 from '../../assets/brand/clover-logo-64.png';
-import logo192 from '../../assets/brand/clover-logo-192.png';
 
 const SIZES = {
   sm: { box: 32, src: logo32 },
   md: { box: 40, src: logo64 },
-  lg: { box: 48, src: logo192 },
+  lg: { box: 48, src: logo64 },
 };
 
 export default function BrandLogo({
