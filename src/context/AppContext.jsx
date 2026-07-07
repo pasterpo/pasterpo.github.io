@@ -1,7 +1,10 @@
-import { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import { createContext, useContext, useReducer, useCallback, useEffect, useRef } from 'react';
 
-const LOCAL_PROJECTS_KEY = 'htmleaf-projects-v3';
-const LOCAL_LAST_PROJECT_KEY = 'htmleaf-last-project-id';
+const LOCAL_PROJECTS_KEY = 'cloverleaf-projects-v1';
+const LOCAL_LAST_PROJECT_KEY = 'cloverleaf-last-project-id';
+const THEME_STORAGE_KEY = 'cloverleaf-theme';
+const LEGACY_PROJECT_KEYS = ['htmleaf-projects-v3', 'htmleaf-projects-v2', 'htmleaf-projects-v1'];
+const LEGACY_LAST_PROJECT_KEY = 'htmleaf-last-project-id';
 
 function uuid() {
   return crypto.randomUUID();
@@ -36,7 +39,7 @@ function createStarterProject(name = 'Untitled Project') {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HTMLeaf Document</title>
+  <title>Clover Leaf Document</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -45,7 +48,7 @@ function createStarterProject(name = 'Untitled Project') {
     <p>Start writing your HTML document here. Use the preview pane to see live output.</p>
     <section>
       <h2>Getting Started</h2>
-      <p>HTMLeaf works like Overleaf, but for HTML. Write your markup in the editor, and compile to see the rendered output or export as PDF.</p>
+      <p>Clover Leaf helps you write HTML with clarity. Edit your markup in the editor, compile to preview, and export as PDF.</p>
     </section>
   </main>
   <script src="script.js"><\/script>
@@ -74,11 +77,73 @@ p { margin-bottom: 1em; }`
       },
       {
         id: jsId, parentId: rootId, type: 'file', name: 'script.js',
-        content: `// HTMLeaf project script
-console.log('HTMLeaf document loaded');`
+        content: `// Clover Leaf project script
+console.log('Clover Leaf document loaded');`
       },
     ],
   };
+}
+
+function readStoredSplitRatio() {
+  try {
+    const stored = parseFloat(localStorage.getItem('cloverleaf-editor-split'));
+    if (!Number.isNaN(stored) && stored >= 0.22 && stored <= 0.78) return stored;
+  } catch {
+    /* ignore */
+  }
+  return 0.5;
+}
+
+function readStoredTheme() {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
+  } catch {
+    /* ignore */
+  }
+  return 'system';
+}
+
+function resolveTheme(theme) {
+  if (theme === 'dark' || theme === 'light') return theme;
+  if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark';
+  }
+  return 'light';
+}
+
+function loadProjectsFromStorage() {
+  try {
+    const current = localStorage.getItem(LOCAL_PROJECTS_KEY);
+    if (current) return JSON.parse(current);
+
+    for (const key of LEGACY_PROJECT_KEYS) {
+      const legacy = localStorage.getItem(key);
+      if (legacy) {
+        const projects = JSON.parse(legacy);
+        localStorage.setItem(LOCAL_PROJECTS_KEY, legacy);
+        return projects;
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load projects:', e);
+  }
+  return null;
+}
+
+function migrateLastProjectId() {
+  try {
+    const current = localStorage.getItem(LOCAL_LAST_PROJECT_KEY);
+    if (current) return current;
+    const legacy = localStorage.getItem(LEGACY_LAST_PROJECT_KEY);
+    if (legacy) {
+      localStorage.setItem(LOCAL_LAST_PROJECT_KEY, legacy);
+      return legacy;
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
 }
 
 const initialState = {
@@ -90,6 +155,8 @@ const initialState = {
   openFileIds: [],
   sidebarPanel: 'files', // 'files' | 'search' | 'review' | 'settings'
   sidebarOpen: true,
+  workspaceLayout: 'split', // 'split' | 'editor' | 'preview'
+  editorSplitRatio: readStoredSplitRatio(),
   compiled: false,
   compileMode: 'freestyle',
   pageSize: 'A4',
@@ -98,7 +165,10 @@ const initialState = {
   previewZoom: 1,
   projectSearch: '',
   projectSort: 'recent',
-  menuOpen: null, // which menu is open
+  menuOpen: null,
+  theme: readStoredTheme(),
+  resolvedTheme: 'light',
+  toasts: [],
 };
 
 function getNodePath(nodes, nodeId) {
@@ -182,6 +252,19 @@ function reducer(state, action) {
     case 'TOGGLE_SIDEBAR':
       return { ...state, sidebarOpen: !state.sidebarOpen };
 
+    case 'SET_EDITOR_SPLIT_RATIO':
+      return { ...state, editorSplitRatio: action.payload };
+
+    case 'SET_WORKSPACE_LAYOUT':
+      return { ...state, workspaceLayout: action.payload };
+
+    case 'CYCLE_WORKSPACE_LAYOUT': {
+      const order = ['split', 'editor', 'preview'];
+      const idx = order.indexOf(state.workspaceLayout);
+      const next = order[(idx + 1) % order.length];
+      return { ...state, workspaceLayout: next };
+    }
+
     case 'SET_COMPILE_MODE':
       return { ...state, compileMode: action.payload };
 
@@ -206,6 +289,18 @@ function reducer(state, action) {
     case 'SET_MENU_OPEN':
       return { ...state, menuOpen: action.payload };
 
+    case 'SET_THEME':
+      return { ...state, theme: action.payload };
+
+    case 'SET_RESOLVED_THEME':
+      return { ...state, resolvedTheme: action.payload };
+
+    case 'ADD_TOAST':
+      return { ...state, toasts: [...state.toasts, action.payload] };
+
+    case 'REMOVE_TOAST':
+      return { ...state, toasts: state.toasts.filter(t => t.id !== action.payload) };
+
     default:
       return state;
   }
@@ -215,35 +310,78 @@ const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const saveToastTimerRef = useRef(null);
+  const lastSaveToastRef = useRef(0);
 
-  // Load projects from localStorage on mount
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(LOCAL_PROJECTS_KEY);
-      if (raw) {
-        const projects = JSON.parse(raw);
-        dispatch({ type: 'LOAD_PROJECTS', payload: projects });
-      }
-    } catch (e) {
-      console.warn('Failed to load projects:', e);
+  const hydratedRef = useRef(false);
+
+  const showToast = useCallback((message, type = 'info', duration = 3500) => {
+    const id = crypto.randomUUID();
+    dispatch({ type: 'ADD_TOAST', payload: { id, message, type, duration } });
+    if (duration > 0) {
+      setTimeout(() => dispatch({ type: 'REMOVE_TOAST', payload: id }), duration);
     }
   }, []);
 
-  // Save projects to localStorage on change
+  // Apply theme to document
   useEffect(() => {
+    const apply = () => {
+      const resolved = resolveTheme(state.theme);
+      dispatch({ type: 'SET_RESOLVED_THEME', payload: resolved });
+      document.documentElement.setAttribute('data-theme', resolved);
+    };
+    apply();
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, state.theme);
+    } catch {
+      /* ignore */
+    }
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => {
+      if (state.theme === 'system') apply();
+    };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [state.theme]);
+
+  // Load projects from localStorage on mount (with legacy migration)
+  useEffect(() => {
+    const projects = loadProjectsFromStorage();
+    if (projects) {
+      dispatch({ type: 'LOAD_PROJECTS', payload: projects });
+    }
+    migrateLastProjectId();
+    hydratedRef.current = true;
+  }, []);
+
+  // Save projects to localStorage on change (after hydration)
+  useEffect(() => {
+    if (!hydratedRef.current) return;
     try {
       localStorage.setItem(LOCAL_PROJECTS_KEY, JSON.stringify(state.projects));
     } catch (e) {
       console.warn('Failed to save projects:', e);
+      showToast('Failed to save projects', 'error');
     }
-  }, [state.projects]);
+  }, [state.projects, showToast]);
+
+  const scheduleSaveToast = useCallback(() => {
+    if (saveToastTimerRef.current) clearTimeout(saveToastTimerRef.current);
+    saveToastTimerRef.current = setTimeout(() => {
+      const now = Date.now();
+      if (now - lastSaveToastRef.current < 8000) return;
+      lastSaveToastRef.current = now;
+      showToast('Changes saved', 'success', 2500);
+    }, 1500);
+  }, [showToast]);
 
   const createProject = useCallback((name) => {
     const project = createStarterProject(name || 'Untitled Project');
     dispatch({ type: 'ADD_PROJECT', payload: project });
     dispatch({ type: 'OPEN_PROJECT', payload: project.id });
+    showToast(`Created "${project.name}"`, 'success');
     return project;
-  }, []);
+  }, [showToast]);
 
   const openProject = useCallback((id) => {
     dispatch({ type: 'OPEN_PROJECT', payload: id });
@@ -261,14 +399,17 @@ export function AppProvider({ children }) {
       dispatch({ type: 'UPDATE_PROJECT', payload: updated });
     }
     dispatch({ type: 'CLOSE_PROJECT' });
-  }, [state.activeProject, state.activeFileId, state.openFileIds]);
+    showToast('Project saved', 'success', 2500);
+  }, [state.activeProject, state.activeFileId, state.openFileIds, showToast]);
 
   const deleteProject = useCallback((id) => {
+    const project = state.projects.find(p => p.id === id);
     dispatch({ type: 'DELETE_PROJECT', payload: id });
     if (state.activeProjectId === id) {
       dispatch({ type: 'CLOSE_PROJECT' });
     }
-  }, [state.activeProjectId]);
+    showToast(project ? `Deleted "${project.name}"` : 'Project deleted', 'info');
+  }, [state.activeProjectId, state.projects, showToast]);
 
   const updateFileContent = useCallback((fileId, content) => {
     if (!state.activeProject) return;
@@ -280,7 +421,8 @@ export function AppProvider({ children }) {
       ),
     };
     dispatch({ type: 'UPDATE_PROJECT', payload: updated });
-  }, [state.activeProject]);
+    scheduleSaveToast();
+  }, [state.activeProject, scheduleSaveToast]);
 
   const openFile = useCallback((fileId) => {
     dispatch({ type: 'SET_ACTIVE_FILE', payload: fileId });
@@ -385,7 +527,10 @@ export function AppProvider({ children }) {
     const nodes = state.activeProject.nodes;
     const entryId = state.activeProject.entryFileId;
     const entryNode = nodes.find(n => n.id === entryId);
-    if (!entryNode) return;
+    if (!entryNode) {
+      showToast('No entry file found', 'error');
+      return;
+    }
 
     let html = entryNode.content || '';
 
@@ -416,11 +561,27 @@ export function AppProvider({ children }) {
     });
 
     dispatch({ type: 'SET_COMPILED', payload: html });
-  }, [state.activeProject]);
+    showToast('Compiled successfully', 'success', 2500);
+  }, [state.activeProject, showToast]);
+
+  const setTheme = useCallback((theme) => {
+    dispatch({ type: 'SET_THEME', payload: theme });
+    const labels = { light: 'Light mode', dark: 'Dark mode', system: 'System theme' };
+    showToast(labels[theme] || 'Theme updated', 'info', 2500);
+  }, [showToast]);
+
+  const cycleTheme = useCallback(() => {
+    const order = ['light', 'dark', 'system'];
+    const idx = order.indexOf(state.theme);
+    setTheme(order[(idx + 1) % order.length]);
+  }, [state.theme, setTheme]);
 
   const value = {
     state,
     dispatch,
+    showToast,
+    setTheme,
+    cycleTheme,
     createProject,
     openProject,
     closeProject,

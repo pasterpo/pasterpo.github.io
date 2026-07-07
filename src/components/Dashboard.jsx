@@ -1,17 +1,10 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Plus, FileText, Trash2, Clock, FolderOpen, Search, Copy } from 'lucide-react';
-
-function formatDate(iso) {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  const now = new Date();
-  const diff = now - d;
-  if (diff < 60000) return 'Just now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-}
+import BrandLogo from './brand/BrandLogo';
+import ProjectCard from './ProjectCard';
+import EmptyState from './EmptyState';
+import { Link } from 'react-router-dom';
+import { Plus, BookOpen } from 'lucide-react';
 
 export default function Dashboard() {
   const { state, dispatch, createProject, openProject, deleteProject } = useApp();
@@ -43,7 +36,6 @@ export default function Dashboard() {
     copy.id = crypto.randomUUID();
     copy.name = `${project.name} (Copy)`;
     copy.updatedAt = new Date().toISOString();
-    // Regenerate all node IDs
     const idMap = new Map();
     copy.nodes.forEach(n => {
       const newId = crypto.randomUUID();
@@ -66,43 +58,37 @@ export default function Dashboard() {
     }
   };
 
+  const emptyVariant = state.projects.length === 0 ? 'empty' : 'no-results';
+
   return (
     <div className="dashboard">
-      {/* Header */}
       <header className="dashboard-header">
         <div className="dashboard-header-left">
-          <div className="dashboard-brand">
-            <div className="dashboard-brand-icon">H</div>
-            <span className="dashboard-brand-text">HTMLeaf</span>
-          </div>
+          <BrandLogo size="lg" />
         </div>
         <div className="dashboard-header-right">
-          <button className="btn-new-project" onClick={() => setShowNewModal(true)}>
+          <Link to="/help" className="btn-help-link">
+            <BookOpen size={16} />
+            Help
+          </Link>
+          <button type="button" className="btn-new-project" onClick={() => setShowNewModal(true)}>
             <Plus size={16} />
             New Project
           </button>
         </div>
       </header>
 
-      {/* Body */}
       <div className="dashboard-body">
-        {/* Toolbar */}
         <div className="dashboard-toolbar">
-          <div className="dashboard-toolbar-left">
-            <h1 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--ol-text)' }}>
-              Your Projects
-            </h1>
-          </div>
-          <div className="dashboard-toolbar-left">
-            <div style={{ position: 'relative' }}>
-              <input
-                className="dashboard-search"
-                type="search"
-                placeholder="Search projects..."
-                value={state.projectSearch}
-                onChange={e => dispatch({ type: 'SET_PROJECT_SEARCH', payload: e.target.value })}
-              />
-            </div>
+          <h1 className="dashboard-title">Your Projects</h1>
+          <div className="dashboard-toolbar-controls">
+            <input
+              className="dashboard-search"
+              type="search"
+              placeholder="Search projects..."
+              value={state.projectSearch}
+              onChange={e => dispatch({ type: 'SET_PROJECT_SEARCH', payload: e.target.value })}
+            />
             <select
               className="dashboard-sort"
               value={state.projectSort}
@@ -114,76 +100,26 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Content */}
         {filtered.length === 0 ? (
-          <div className="dashboard-empty">
-            <FolderOpen size={80} />
-            {state.projects.length === 0 ? (
-              <>
-                <h2>No projects yet</h2>
-                <p>Create your first project to start writing HTML documents with live preview and PDF export — just like Overleaf, but for HTML.</p>
-                <button className="btn-new-project" onClick={() => setShowNewModal(true)}>
-                  <Plus size={16} />
-                  Create Your First Project
-                </button>
-              </>
-            ) : (
-              <>
-                <h2>No matching projects</h2>
-                <p>Try a different search term.</p>
-              </>
-            )}
-          </div>
+          <EmptyState
+            variant={emptyVariant}
+            onCreateProject={() => setShowNewModal(true)}
+          />
         ) : (
-          <table className="project-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Last Modified</th>
-                <th>Files</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(project => {
-                const fileCount = project.nodes?.filter(n => n.type === 'file').length || 0;
-                return (
-                  <tr key={project.id} onClick={() => openProject(project.id)}>
-                    <td>
-                      <div className="project-name-cell">
-                        <FileText size={18} />
-                        <span>{project.name}</span>
-                      </div>
-                    </td>
-                    <td className="project-date-cell">{formatDate(project.updatedAt)}</td>
-                    <td className="project-files-cell">{fileCount} file{fileCount !== 1 ? 's' : ''}</td>
-                    <td>
-                      <div className="project-actions-cell">
-                        <button
-                          className="project-action-btn"
-                          title="Duplicate"
-                          onClick={(e) => handleDuplicate(e, project)}
-                        >
-                          <Copy size={16} />
-                        </button>
-                        <button
-                          className="project-action-btn danger"
-                          title="Delete"
-                          onClick={(e) => handleDelete(e, project.id)}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="project-grid" role="list">
+            {filtered.map(project => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                onOpen={openProject}
+                onDuplicate={handleDuplicate}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
         )}
       </div>
 
-      {/* New Project Modal */}
       {showNewModal && (
         <div className="modal-overlay" onClick={() => setShowNewModal(false)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
@@ -199,8 +135,12 @@ export default function Dashboard() {
               autoFocus
             />
             <div className="modal-actions">
-              <button className="btn-modal-cancel" onClick={() => setShowNewModal(false)}>Cancel</button>
-              <button className="btn-modal-confirm" onClick={handleCreate}>Create Project</button>
+              <button type="button" className="btn-modal-cancel" onClick={() => setShowNewModal(false)}>
+                Cancel
+              </button>
+              <button type="button" className="btn-modal-confirm" onClick={handleCreate}>
+                Create Project
+              </button>
             </div>
           </div>
         </div>

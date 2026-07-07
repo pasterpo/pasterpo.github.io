@@ -6,7 +6,6 @@
   min-width: 0;
   flex: 1;
   background: var(--ol-panel);
-  border-right: 1px solid var(--ol-border);
 }
 
 /* Tab strip */

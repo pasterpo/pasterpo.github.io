@@ -1,6 +1,20 @@
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Menu, ChevronDown, History, Share2, Columns, Download, FileText, Settings } from 'lucide-react';
+import BrandLogo from './brand/BrandLogo';
+import { Link } from 'react-router-dom';
+import { Columns, PanelLeft, PanelRight, Download, FileText, Play, BookOpen } from 'lucide-react';
+
+const LAYOUT_ICONS = {
+  split: Columns,
+  editor: PanelLeft,
+  preview: PanelRight,
+};
+
+const LAYOUT_LABELS = {
+  split: 'Split view',
+  editor: 'Editor only',
+  preview: 'Preview only',
+};
 
 export default function Toolbar() {
   const { state, dispatch, closeProject, renameProject, compile } = useApp();
@@ -41,17 +55,19 @@ export default function Toolbar() {
     setOpenMenu(null);
   };
 
+  const LayoutIcon = LAYOUT_ICONS[state.workspaceLayout] || Columns;
+
   return (
     <header className="toolbar" ref={menuRef}>
-      <button className="toolbar-brand" onClick={closeProject} title="Back to projects">
-        <span className="toolbar-brand-icon">H</span>
-        <span className="toolbar-brand-text">HTMLeaf</span>
+      <button type="button" className="toolbar-brand" onClick={closeProject} title="Back to projects">
+        <BrandLogo size="md" variant="on-dark" />
       </button>
 
       <div className="toolbar-menus">
         {['File', 'Edit', 'View'].map(menu => (
-          <div key={menu} style={{ position: 'relative' }}>
+          <div key={menu} className="toolbar-menu-wrap">
             <button
+              type="button"
               className={`toolbar-menu-trigger ${openMenu === menu ? 'active' : ''}`}
               onClick={() => toggleMenu(menu)}
             >
@@ -61,11 +77,11 @@ export default function Toolbar() {
               <div className="toolbar-dropdown">
                 {menu === 'File' && (
                   <>
-                    <button className="toolbar-dropdown-item" onClick={() => { closeProject(); setOpenMenu(null); }}>
+                    <button type="button" className="toolbar-dropdown-item" onClick={() => { closeProject(); setOpenMenu(null); }}>
                       <FileText size={14} /> Back to Dashboard
                     </button>
                     <div className="toolbar-dropdown-divider" />
-                    <button className="toolbar-dropdown-item" onClick={handleExportHTML}>
+                    <button type="button" className="toolbar-dropdown-item" onClick={handleExportHTML}>
                       <Download size={14} /> Download HTML
                       <span className="shortcut">⌘⇧E</span>
                     </button>
@@ -73,26 +89,33 @@ export default function Toolbar() {
                 )}
                 {menu === 'Edit' && (
                   <>
-                    <button className="toolbar-dropdown-item" onClick={() => setOpenMenu(null)}>
+                    <button type="button" className="toolbar-dropdown-item" onClick={() => setOpenMenu(null)}>
                       Undo <span className="shortcut">⌘Z</span>
                     </button>
-                    <button className="toolbar-dropdown-item" onClick={() => setOpenMenu(null)}>
+                    <button type="button" className="toolbar-dropdown-item" onClick={() => setOpenMenu(null)}>
                       Redo <span className="shortcut">⌘⇧Z</span>
                     </button>
                     <div className="toolbar-dropdown-divider" />
-                    <button className="toolbar-dropdown-item" onClick={() => setOpenMenu(null)}>
+                    <button type="button" className="toolbar-dropdown-item" onClick={() => setOpenMenu(null)}>
                       Find & Replace <span className="shortcut">⌘H</span>
                     </button>
                   </>
                 )}
                 {menu === 'View' && (
                   <>
-                    <button className="toolbar-dropdown-item" onClick={() => { dispatch({ type: 'TOGGLE_SIDEBAR' }); setOpenMenu(null); }}>
+                    <button type="button" className="toolbar-dropdown-item" onClick={() => { dispatch({ type: 'TOGGLE_SIDEBAR' }); setOpenMenu(null); }}>
                       Toggle Sidebar <span className="shortcut">⌘B</span>
                     </button>
-                    <button className="toolbar-dropdown-item" onClick={() => setOpenMenu(null)}>
+                    <button type="button" className="toolbar-dropdown-item" onClick={() => { dispatch({ type: 'CYCLE_WORKSPACE_LAYOUT' }); setOpenMenu(null); }}>
+                      Cycle Layout <span className="shortcut">⌘\</span>
+                    </button>
+                    <button type="button" className="toolbar-dropdown-item" onClick={() => setOpenMenu(null)}>
                       Toggle Word Wrap <span className="shortcut">⌥Z</span>
                     </button>
+                    <div className="toolbar-dropdown-divider" />
+                    <Link to="/help" className="toolbar-dropdown-item" onClick={() => setOpenMenu(null)}>
+                      <BookOpen size={14} /> Help
+                    </Link>
                   </>
                 )}
               </div>
@@ -104,24 +127,43 @@ export default function Toolbar() {
       {renaming ? (
         <div className="toolbar-project-name">
           <input
+            className="toolbar-rename-input"
             autoFocus
             value={newName}
             onChange={e => setNewName(e.target.value)}
             onBlur={handleRename}
             onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setRenaming(false); }}
-            style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'inherit', padding: '2px 6px', borderRadius: 4, outline: 'none', width: '200px' }}
           />
         </div>
       ) : (
-        <button className="toolbar-project-name" onClick={() => { setNewName(state.activeProject?.name || ''); setRenaming(true); }}>
+        <button
+          type="button"
+          className="toolbar-project-name"
+          onClick={() => { setNewName(state.activeProject?.name || ''); setRenaming(true); }}
+        >
           <span className="truncate">{state.activeProject?.name || 'Untitled'}</span>
           <span className="chevron">▾</span>
         </button>
       )}
 
       <div className="toolbar-actions">
-        <button className="toolbar-action" title="Layout">
-          <Columns size={16} />
+        <button
+          type="button"
+          className="toolbar-action toolbar-compile"
+          onClick={compile}
+          title="Compile (⌘ Enter)"
+        >
+          <Play size={16} />
+          <span>Compile</span>
+        </button>
+        <div className="toolbar-divider" />
+        <button
+          type="button"
+          className="toolbar-action"
+          onClick={() => dispatch({ type: 'CYCLE_WORKSPACE_LAYOUT' })}
+          title={LAYOUT_LABELS[state.workspaceLayout]}
+        >
+          <LayoutIcon size={16} />
         </button>
       </div>
     </header>

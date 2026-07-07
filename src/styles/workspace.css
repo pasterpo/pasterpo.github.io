@@ -1,0 +1,59 @@
+/* ===== Editor Workspace — split panes ===== */
+
+.workspace-split {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+}
+
+.workspace-split.layout-split {
+  grid-template-columns: var(--editor-split, 50%) 6px 1fr;
+}
+
+.workspace-split.layout-editor {
+  grid-template-columns: 1fr;
+}
+
+.workspace-split.layout-preview {
+  grid-template-columns: 1fr;
+}
+
+.workspace-split.layout-editor .workspace-preview {
+  display: none;
+}
+
+.workspace-split.layout-preview .workspace-editor {
+  display: none;
+}
+
+.workspace-editor,
+.workspace-preview {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.workspace-split .resize-handle {
+  width: 6px;
+  cursor: col-resize;
+  background: var(--ol-border);
+  transition: background var(--ol-transition-fast);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.workspace-split .resize-handle::after {
+  content: '';
+  position: absolute;
+  inset: 0 -4px;
+}
+
+.workspace-split .resize-handle:hover,
+.workspace-split .resize-handle.active {
+  background: var(--cl-clover-500, var(--ol-green));
+}

@@ -22,5 +22,3 @@
 .preview-empty svg { width: 64px; height: 64px; opacity: 0.2; }
 .preview-empty h3 { font-size: var(--ol-font-size-md); color: var(--ol-text-secondary); font-weight: 500; }
 .preview-empty p { font-size: var(--ol-font-size-sm); max-width: 320px; line-height: 1.6; }
-.resize-handle { width: 6px; cursor: col-resize; background: var(--ol-border); transition: background var(--ol-transition-fast); flex-shrink: 0; }
-.resize-handle:hover, .resize-handle.active { background: var(--ol-green); }

@@ -1,8 +1,13 @@
-/* ===== HTMLeaf — Overleaf-Inspired Design Tokens ===== */
+/* ===== Clover Leaf — Design Tokens ===== */
 
 :root {
-  /* Primary Green (Overleaf signature) */
-  --ol-green: #4a8f3c;
+  /* Clover Leaf brand */
+  --cl-clover-600: #2f6b4f;
+  --cl-clover-500: #3d8b66;
+  --cl-clover-100: #e8f3ec;
+
+  /* Primary Green */
+  --ol-green: #3d8b66;
   --ol-green-hover: #3d7a31;
   --ol-green-active: #2d6422;
   --ol-green-soft: #e6f4e3;
@@ -15,7 +20,7 @@
   --ol-panel-inset: #f5f6f8;
 
   /* Top Toolbar */
-  --ol-toolbar-bg: #455a64;
+  --ol-toolbar-bg: #2a4a3a;
   --ol-toolbar-text: #eceff1;
   --ol-toolbar-hover: rgba(255, 255, 255, 0.08);
   --ol-toolbar-active: rgba(255, 255, 255, 0.14);
